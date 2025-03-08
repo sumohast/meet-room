@@ -1,13 +1,53 @@
 {% extends 'main.html' %}
 
 {% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    {% if page == 'create-room' %}
+                        Create a New Meeting Room
+                    {% else %}
+                        Update Meeting Room
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {% csrf_token %}
 
-<div>
-    <form method="POST" action="">
-        {% csrf_token %}
-        {{form.as_p}}
-        <input type="submit" value="Submit" />
-    </form>
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">Room Name</label>
+                        <input type="text" class="form-control" id="id_name" name="name"
+                               value="{% if room %}{{ room.name }}{% endif %}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_topic" class="form-label">Topic</label>
+                        <select class="form-control" id="id_topic" name="topic" required>
+                            {% for topic in topics %}
+                                <option value="{{ topic.name }}"
+                                    {% if room and room.topic and room.topic.name == topic.name %}selected{% endif %}>
+                                    {{ topic.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="id_description" name="description" rows="4">{% if room %}{{ room.description }}{% endif %}</textarea>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            {% if page == 'create-room' %}Create Room{% else %}Update Room{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
-
-{% endblock content %}
+{% endblock %}

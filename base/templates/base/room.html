@@ -1,62 +1,122 @@
 {% extends 'main.html' %}
 
 {% block content %}
-
-<style>
-    .room-container {
-        display: grid;
-        grid-template-columns: 3fr 1fr;
-    }
-</style>
-
-<div class="room-container">
-
-    <div>
-
-        <h1>{{room.name}}</h1>
-
-        <p>{{room.description}}</p>
-
-
-        <div class="comment-wrapper">
-            <h3>Conversation</h3>
-            <hr>
-
-            {% for message in room_messages %}
-            <div>
-                {% if request.user == message.user %}
-                <a href="{% url 'delete-message' message.id %}">Delete</a>
-                {% endif %}
-                <small>@{{message.user}} {{message.created|timesince}} ago </small>
-                <p>{{message.body}}</p>
-                <hr>
+<div class="row">
+    <!-- Main Content (Room Details) -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">{{ room.name }}</h3>
+                <span class="badge bg-primary">{{ room.topic.name }}</span>
             </div>
-            {% endfor %}
+            <div class="card-body">
+                <div class="d-flex mb-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-circle fs-4 text-primary"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0">{{ room.host.username }}</h6>
+                        <small class="text-muted">Host</small>
+                    </div>
+                </div>
+                
+                <h5>About this room</h5>
+                <p>{{ room.description }}</p>
+                
+                <div class="d-flex justify-content-between small text-muted">
+                    <span><i class="fas fa-clock me-1"></i> Created {{ room.created|timesince }} ago</span>
+                    <span><i class="fas fa-sync me-1"></i> Updated {{ room.updated|timesince }} ago</span>
+                </div>
+            </div>
+            
+            {% if request.user == room.host %}
+            <div class="card-footer d-flex justify-content-end gap-2">
+                <a href="{% url 'update-room' room.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-edit me-1"></i> Edit
+                </a>
+                <a href="{% url 'delete-room' room.id %}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-trash me-1"></i> Delete
+                </a>
+            </div>
+            {% endif %}
         </div>
-
-
-        {% if request.user.is_authenticated %}
-        <div class="comment-form">
-            <form method="POST" action="">
-                {% csrf_token %}
-                <input type="text" name="body" placeholder="Write you message here..." />
-            </form>
+        
+        <!-- Messages/Conversation Section -->
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Conversation</h4>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% for message in room_messages %}
+                <div class="d-flex mb-3 {% if message.user == request.user %}justify-content-end{% endif %}">
+                    <div class="card {% if message.user == request.user %}bg-light{% else %}bg-white{% endif %}"
+                         style="max-width: 80%;">
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">@{{ message.user.username }}</small>
+                                <small class="text-muted">{{ message.created|timesince }}</small>
+                            </div>
+                            <p class="card-text mb-1">{{ message.body }}</p>
+                            {% if request.user == message.user %}
+                            <div class="text-end">
+                                <a href="{% url 'delete-message' message.id %}" class="text-danger">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-muted my-4">No messages yet. Start the conversation!</p>
+                {% endfor %}
+            </div>
+            <div class="card-footer">
+                {% if request.user.is_authenticated %}
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" name="body" class="form-control" placeholder="Write your message here...">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i> Send
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-warning mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    You need to be logged in to send messages. 
+                    <a href="{% url 'login' %}" class="alert-link">Login here</a>
+                </div>
+                {% endif %}
+            </div>
         </div>
-        {% endif %}
-
     </div>
-
-    <div>
-        <h3>Participants</h3>
-        <hr>
-
-        {% for user in participants %}
-        <div>
-            <p>@{{user.username}}</p>
+    
+    <!-- Sidebar (Participants) -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Participants ({{ participants.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% for user in participants %}
+                <div class="d-flex align-items-center mb-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-circle fs-4 text-primary"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0">@{{ user.username }}</h6>
+                        <small class="text-muted">
+                            {% if user == room.host %}Host{% else %}Participant{% endif %}
+                        </small>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">No participants yet</p>
+                {% endfor %}
+            </div>
         </div>
-        {% endfor %}
     </div>
-
 </div>
-
 {% endblock %}

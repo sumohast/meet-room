@@ -107,7 +107,23 @@ def room_calendar(request, room_id):
 @login_required
 def create_reservation(request, room_id):
     room = get_object_or_404(Room, id=room_id)
-    form = ReservationForm()
+    
+    # Get initial values from query parameters
+    initial_data = {}
+    if 'date' in request.GET:
+        try:
+            initial_data['date'] = datetime.strptime(request.GET.get('date'), '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    
+    if 'start' in request.GET and 'end' in request.GET:
+        try:
+            initial_data['start_time'] = datetime.strptime(request.GET.get('start'), '%H:%M').time()
+            initial_data['end_time'] = datetime.strptime(request.GET.get('end'), '%H:%M').time()
+        except ValueError:
+            pass
+    
+    form = ReservationForm(initial=initial_data)
     
     if request.method == 'POST':
         form = ReservationForm(request.POST)
@@ -393,3 +409,46 @@ def register_page(request):
             
     context = {'form': form}
     return render(request, 'base/register.html', context)
+
+@login_required
+def quick_reserve(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    
+    if request.method == 'POST':
+        date_str = request.POST.get('date')
+        start_str = request.POST.get('start')
+        end_str = request.POST.get('end')
+        
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            start_time = datetime.strptime(start_str, '%H:%M').time()
+            end_time = datetime.strptime(end_str, '%H:%M').time()
+            
+            # Check if the time slot is available
+            if room.is_available(date, start_time, end_time):
+                # Create the reservation with a default title
+                title = f"Quick reservation - {room.name}"
+                reservation = Reservation.objects.create(
+                    user=request.user,
+                    room=room,
+                    title=title,
+                    date=date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    description="Quick reservation"
+                )
+                messages.success(request, f'Reservation for {room.name} created successfully!')
+            else:
+                messages.error(request, 'This time slot is already booked')
+                
+            # Redirect back to the page they came from
+            referer = request.META.get('HTTP_REFERER')
+            if referer:
+                return redirect(referer)
+            return redirect('room-detail', room_id=room_id)
+            
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid date or time format')
+    
+    # If not POST or there was an error, redirect to room detail
+    return redirect('room-detail', room_id=room_id)

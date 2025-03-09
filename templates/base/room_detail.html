@@ -106,9 +106,15 @@
                     <div class="time-slot">
                         {{ start|time:"H:i" }} - {{ end|time:"H:i" }}
                         {% if user.is_authenticated %}
-                        <a href="{% url 'create-reservation' room.id %}?date={{ today|date:'Y-m-d' }}&start={{ start|time:'H:i' }}&end={{ end|time:'H:i' }}" class="btn btn-sm btn-primary float-end">
-                            <i class="fas fa-plus"></i>
-                        </a>
+                        <form method="POST" action="{% url 'quick-reserve' room.id %}" class="d-inline float-end">
+                            {% csrf_token %}
+                            <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+                            <input type="hidden" name="start" value="{{ start|time:'H:i' }}">
+                            <input type="hidden" name="end" value="{{ end|time:'H:i' }}">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </form>
                         {% endif %}
                     </div>
                     {% endfor %}

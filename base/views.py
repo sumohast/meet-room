@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.mail import send_mail
 from django.conf import settings
 from datetime import datetime, date, timedelta
@@ -175,22 +175,30 @@ def user_reservations(request):
     return render(request, 'base/user_reservations.html', context)
 
 @login_required
-def cancel_reservation(request, pk):
-    reservation = get_object_or_404(Reservation, id=pk)
+def cancel_reservation(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id)
     
-    # Only allow cancellation if user is the creator or staff member
+    # Check if the user is authorized to cancel this reservation
     if request.user != reservation.user and not request.user.is_staff:
-        messages.error(request, 'You are not allowed to cancel this reservation')
-        return redirect('user-reservations')
+        messages.error(request, "You don't have permission to cancel this reservation.")
+        return redirect('home')
     
     if request.method == 'POST':
         reservation.delete()
         messages.success(request, 'Reservation cancelled successfully!')
+        
+        # Redirect based on user type
         if request.user.is_staff:
             return redirect('admin-reservations')
-        return redirect('user-reservations')
+        else:
+            return redirect('user-reservations')
     
-    return render(request, 'base/delete.html', {'obj': reservation, 'type': 'reservation'})
+    context = {
+        'obj': reservation,
+        'type': 'reservation'
+    }
+    
+    return render(request, 'base/delete.html', context)
 
 # Admin Views
 @staff_member_required
@@ -215,60 +223,26 @@ def admin_dashboard(request):
     }
     return render(request, 'base/admin_dashboard.html', context)
 
+@login_required
 @staff_member_required
 def admin_reservations(request):
-    # Get filter parameters
-    room_id = request.GET.get('room', '')
-    user_id = request.GET.get('user', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    
-    # Convert date strings to date objects if provided
-    if date_from:
-        try:
-            date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
-        except ValueError:
-            date_from = ''
-    
-    if date_to:
-        try:
-            date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-        except ValueError:
-            date_to = ''
-    
-    # Base queryset
-    reservations = Reservation.objects.all().order_by('date', 'start_time')
-    
-    # Apply filters
-    if room_id:
-        reservations = reservations.filter(room_id=room_id)
-    
-    if user_id:
-        reservations = reservations.filter(user_id=user_id)
-    
-    if date_from:
-        reservations = reservations.filter(date__gte=date_from)
-    
-    if date_to:
-        reservations = reservations.filter(date__lte=date_to)
-    
-    # Get all rooms and users for filter dropdowns
-    rooms = Room.objects.all()
-    users = User.objects.all()
+    reservations_list = Reservation.objects.all().order_by('-date', 'start_time')
     
     # Pagination
-    paginator = Paginator(reservations, 10)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(reservations_list, 10)  # Show 10 reservations per page
+    page = request.GET.get('page')
+    
+    try:
+        reservations = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        reservations = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results
+        reservations = paginator.page(paginator.num_pages)
     
     context = {
-        'reservations': page_obj,
-        'rooms': rooms,
-        'users': users,
-        'selected_room': room_id,
-        'selected_user': user_id,
-        'date_from': date_from.strftime('%Y-%m-%d') if isinstance(date_from, date) else '',
-        'date_to': date_to.strftime('%Y-%m-%d') if isinstance(date_to, date) else '',
+        'reservations': reservations,
     }
     
     return render(request, 'base/admin_reservations.html', context)

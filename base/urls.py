@@ -9,7 +9,8 @@ urlpatterns = [
     # Reservation routes
     path('room/<str:room_id>/reserve/', views.create_reservation, name="create-reservation"),
     path('my-reservations/', views.user_reservations, name="user-reservations"),
-    path('cancel-reservation/<str:pk>/', views.cancel_reservation, name="cancel-reservation"),
+    path('cancel-reservation/<int:reservation_id>/', views.cancel_reservation, name='cancel-reservation'),
+    
     
     # Admin routes
     path('admin-dashboard/', views.admin_dashboard, name="admin-dashboard"),

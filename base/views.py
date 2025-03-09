@@ -58,7 +58,7 @@ def room(request, pk):
     context = {
         'room': room, 
         'room_messages': room_messages,
-        'participants': participants
+        'participants': participants , 
     }
     return render(request, 'base/room.html', context)
 

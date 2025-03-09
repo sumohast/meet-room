@@ -1,0 +1,110 @@
+{% extends 'base/main.html' %}
+
+{% block title %}
+    {% if type == 'reservation' %}
+        Cancel Reservation
+    {% elif type == 'room' %}
+        Delete Room
+    {% else %}
+        Delete Message
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h4 class="mb-0">
+                        {% if type == 'reservation' %}
+                            <i class="fas fa-calendar-times me-2 text-danger"></i>Cancel Reservation
+                        {% elif type == 'room' %}
+                            <i class="fas fa-trash-alt me-2 text-danger"></i>Delete Room
+                        {% else %}
+                            <i class="fas fa-trash-alt me-2 text-danger"></i>Delete Message
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if type == 'reservation' %}
+                        <div class="alert alert-warning">
+                            <p class="mb-0">Are you sure you want to cancel this reservation?</p>
+                        </div>
+                        
+                        <div class="reservation-details mb-4">
+                            <h5>{{ obj.title }}</h5>
+                            <p class="mb-1">
+                                <i class="fas fa-map-marker-alt me-1"></i> {{ obj.room.name }}
+                            </p>
+                            <p class="mb-1">
+                                <i class="far fa-calendar me-1"></i> {{ obj.date|date:"M d, Y" }}
+                            </p>
+                            <p class="mb-0">
+                                <i class="far fa-clock me-1"></i> {{ obj.start_time|time:"g:i A" }} - {{ obj.end_time|time:"g:i A" }}
+                            </p>
+                        </div>
+                    {% elif type == 'room' %}
+                        <div class="alert alert-danger">
+                            <p class="mb-0">Are you sure you want to delete this room? This action cannot be undone.</p>
+                        </div>
+                        
+                        <div class="room-details mb-4">
+                            <h5>{{ obj.name }}</h5>
+                            <p class="mb-1">
+                                <i class="fas fa-tag me-1"></i> {{ obj.topic.name|default:"No Topic" }}
+                            </p>
+                            <p class="mb-0">
+                                <i class="fas fa-users me-1"></i> Capacity: {{ obj.capacity }}
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger">
+                            <p class="mb-0">Are you sure you want to delete this message? This action cannot be undone.</p>
+                        </div>
+                        
+                        <div class="message-details mb-4">
+                            <p class="mb-1">
+                                <i class="fas fa-quote-left me-1 text-secondary"></i>
+                                {{ obj.body }}
+                                <i class="fas fa-quote-right ms-1 text-secondary"></i>
+                            </p>
+                            <p class="mb-0 text-secondary small">
+                                Posted in {{ obj.room.name }} on {{ obj.created|date:"M d, Y" }} at {{ obj.created|time:"g:i A" }}
+                            </p>
+                        </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            {% if type == 'reservation' %}
+                                <a href="{% url 'user-reservations' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-calendar-times me-1"></i> Confirm Cancellation
+                                </button>
+                            {% elif type == 'room' %}
+                                <a href="{% url 'room' obj.id %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete Room
+                                </button>
+                            {% else %}
+                                <a href="{% url 'room' obj.room.id %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete Message
+                                </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

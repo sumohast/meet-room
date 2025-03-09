@@ -1,0 +1,111 @@
+{% extends 'base/main.html' %}
+
+{% block title %}About{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-transparent">
+                    <h2 class="mb-0"><i class="fas fa-info-circle me-2"></i>About RoomReserve</h2>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h4>Welcome to RoomReserve</h4>
+                        <p>
+                            RoomReserve is a comprehensive meeting room reservation system designed to streamline the process of booking and managing meeting spaces within your organization.
+                        </p>
+                        <p>
+                            Our platform provides an intuitive, user-friendly interface that allows employees to quickly find and reserve available meeting rooms based on their specific requirements.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4>Key Features</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="feature-card p-3">
+                                    <h5><i class="fas fa-search me-2 text-primary"></i>Easy Room Search</h5>
+                                    <p class="mb-0">Quickly find rooms based on capacity, equipment, and availability.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="feature-card p-3">
+                                    <h5><i class="fas fa-calendar-alt me-2 text-primary"></i>Visual Calendar</h5>
+                                    <p class="mb-0">View room availability on an intuitive calendar interface.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="feature-card p-3">
+                                    <h5><i class="fas fa-bell me-2 text-primary"></i>Notifications</h5>
+                                    <p class="mb-0">Receive reminders about upcoming reservations.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="feature-card p-3">
+                                    <h5><i class="fas fa-users me-2 text-primary"></i>Team Collaboration</h5>
+                                    <p class="mb-0">Discuss room details and coordinate with team members.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4>How It Works</h4>
+                        <ol class="how-it-works">
+                            <li class="mb-3">
+                                <strong>Browse Available Rooms</strong> - Search for rooms based on your requirements.
+                            </li>
+                            <li class="mb-3">
+                                <strong>Check Availability</strong> - View the room's calendar to find available time slots.
+                            </li>
+                            <li class="mb-3">
+                                <strong>Make a Reservation</strong> - Book the room for your desired time slot.
+                            </li>
+                            <li class="mb-3">
+                                <strong>Manage Your Bookings</strong> - View, modify, or cancel your reservations as needed.
+                            </li>
+                        </ol>
+                    </div>
+                    
+                    <div>
+                        <h4>Contact Us</h4>
+                        <p>
+                            If you have any questions or need assistance, please don't hesitate to contact our support team:
+                        </p>
+                        <p>
+                            <i class="fas fa-envelope me-2"></i> support@roomreserve.com<br>
+                            <i class="fas fa-phone me-2"></i> (555) 123-4567
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .feature-card {
+        background-color: rgba(126, 87, 194, 0.1);
+        border-radius: 8px;
+        height: 100%;
+        transition: transform 0.2s;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        background-color: rgba(126, 87, 194, 0.15);
+    }
+    
+    .how-it-works li {
+        padding-left: 10px;
+    }
+    
+    .how-it-works li strong {
+        color: var(--accent);
+    }
+</style>
+{% endblock %} 

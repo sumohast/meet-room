@@ -1,0 +1,178 @@
+{% extends 'base/main.html' %}
+
+{% block title %}My Reservations{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-calendar-alt me-2"></i>My Reservations</h2>
+        <a href="{% url 'home' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-1"></i> New Reservation
+        </a>
+    </div>
+    
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if status == 'upcoming' %}active{% endif %}" 
+               href="{% url 'user-reservations' %}?status=upcoming">
+                <i class="fas fa-calendar-day me-1"></i> Upcoming
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status == 'past' %}active{% endif %}" 
+               href="{% url 'user-reservations' %}?status=past">
+                <i class="fas fa-history me-1"></i> Past
+            </a>
+        </li>
+    </ul>
+    
+    {% if reservations %}
+        <div class="card">
+            <div class="list-group list-group-flush">
+                {% for reservation in reservations %}
+                    <div class="list-group-item bg-transparent">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <h5 class="mb-1">{{ reservation.title }}</h5>
+                                <p class="mb-0 text-secondary">
+                                    <i class="fas fa-map-marker-alt me-1"></i> {{ reservation.room.name }}
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="reservation-time">
+                                    <i class="far fa-calendar me-1"></i> {{ reservation.date|date:"M d, Y" }}
+                                </div>
+                                <div class="text-secondary small mt-1">
+                                    <i class="far fa-clock me-1"></i> {{ reservation.start_time|time:"g:i A" }} - {{ reservation.end_time|time:"g:i A" }}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="small text-secondary">
+                                    <i class="fas fa-info-circle me-1"></i> {{ reservation.description|truncatechars:50 }}
+                                </div>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                {% if status == 'upcoming' %}
+                                    <a href="{% url 'room-calendar' reservation.room.id %}?start_date={{ reservation.date|date:'Y-m-d' }}" 
+                                       class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="tooltip" title="View in Calendar">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </a>
+                                    <a href="{% url 'cancel-reservation' reservation.id %}" 
+                                       class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Cancel Reservation">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                {% else %}
+                                    <span class="badge bg-secondary">Completed</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if reservations.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if reservations.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link bg-transparent text-light" 
+                               href="?status={{ status }}&page={{ reservations.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link bg-transparent text-secondary">
+                                <i class="fas fa-chevron-left"></i>
+                            </span>
+                        </li>
+                    {% endif %}
+                    
+                    {% for i in reservations.paginator.page_range %}
+                        {% if reservations.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link bg-accent border-accent">{{ i }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link bg-transparent text-light" 
+                                   href="?status={{ status }}&page={{ i }}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if reservations.has_next %}
+                        <li class="page-item">
+                            <a class="page-link bg-transparent text-light" 
+                               href="?status={{ status }}&page={{ reservations.next_page_number }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link bg-transparent text-secondary">
+                                <i class="fas fa-chevron-right"></i>
+                            </span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            {% if status == 'upcoming' %}
+                <i class="fas fa-calendar-alt fa-3x mb-3 text-secondary"></i>
+                <h4>No upcoming reservations</h4>
+                <p class="text-secondary">You don't have any upcoming room reservations</p>
+                <a href="{% url 'home' %}" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus-circle me-2"></i>Book a Room
+                </a>
+            {% else %}
+                <i class="fas fa-history fa-3x mb-3 text-secondary"></i>
+                <h4>No past reservations</h4>
+                <p class="text-secondary">You don't have any past room reservations</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .nav-tabs {
+        border-bottom-color: #333;
+    }
+    
+    .nav-tabs .nav-link {
+        color: var(--text-secondary);
+        border: none;
+        border-bottom: 2px solid transparent;
+        background-color: transparent;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-color: transparent;
+        border-bottom: 2px solid var(--accent);
+        color: var(--text-primary);
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: var(--accent);
+        background-color: transparent;
+        border-color: transparent;
+        border-bottom: 2px solid var(--accent);
+    }
+    
+    .reservation-time {
+        background-color: rgba(126, 87, 194, 0.1);
+        color: var(--accent);
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %} 

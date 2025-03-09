@@ -1,10 +1,9 @@
-# forms.py - Updated with Reservation Form
 from django.forms import ModelForm
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.db import models
-from .models import Room, Topic, Reservation 
+from .models import Room, Reservation
 from datetime import datetime, timedelta
 
 
@@ -24,15 +23,9 @@ class UserCreateForm(UserCreationForm):
         self.fields['password2'].widget.attrs.update({'class': 'form-control'})
 
 class RoomForm(ModelForm):
-    topic = forms.ModelChoiceField(
-        queryset=Topic.objects.all(),
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    
     class Meta:
         model = Room
-        fields = ['name', 'topic', 'description', 'capacity', 'has_projector', 'has_whiteboard', 'has_video_conference']
+        fields = ['name', 'description', 'capacity', 'has_projector', 'has_whiteboard', 'has_video_conference']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
@@ -43,12 +36,21 @@ class RoomForm(ModelForm):
         }
 
 class ReservationForm(ModelForm):
+    participants_emails = forms.CharField(
+        required=False, 
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'rows': 2, 
+            'placeholder': 'Enter email addresses separated by commas'
+        })
+    )
+    
     class Meta:
         model = Reservation
-        fields = ['title', 'description', 'date', 'start_time', 'end_time']
+        fields = ['title', 'description', 'date', 'start_time', 'end_time', 'participants_emails']
         widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Meeting title'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Meeting description'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
@@ -69,6 +71,10 @@ class ReservationForm(ModelForm):
         if date:
             today = datetime.now().date()
             if date < today:
+                raise forms.ValidationError('Cannot make reservations in the past')
+            
+            # If reservation is for today, check time
+            if date == today and start_time and start_time < datetime.now().time():
                 raise forms.ValidationError('Cannot make reservations in the past')
         
         # Check for overlapping reservations

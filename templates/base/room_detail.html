@@ -1,0 +1,155 @@
+{% extends 'main.html' %}
+
+{% block title %}{{ room.name }} - Details{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                <li class="breadcrumb-item active">{{ room.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">{{ room.name }}</h2>
+                {% if current_status.status == 'free' %}
+                <span class="badge bg-success">Available</span>
+                {% else %}
+                <span class="badge bg-danger">Occupied</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Description</h5>
+                    <p>{{ room.description }}</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h5>Features</h5>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        <span class="feature-badge">
+                            <i class="fas fa-users"></i> {{ room.capacity }} people
+                        </span>
+                        {% if room.has_projector %}
+                        <span class="feature-badge">
+                            <i class="fas fa-projector"></i> Projector
+                        </span>
+                        {% endif %}
+                        {% if room.has_whiteboard %}
+                        <span class="feature-badge">
+                            <i class="fas fa-chalkboard"></i> Whiteboard
+                        </span>
+                        {% endif %}
+                        {% if room.has_video_conference %}
+                        <span class="feature-badge">
+                            <i class="fas fa-video"></i> Video Conference
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h5>Current Status</h5>
+                    {% if current_status.status == 'free' %}
+                    <p class="status-free">
+                        <i class="fas fa-check-circle me-1"></i> Available now
+                        {% if current_status.next_reservation %}
+                        <br>
+                        <small>Next booking: {{ current_status.next_reservation.start_time|time:"H:i" }} - {{ current_status.next_reservation.title }}</small>
+                        {% endif %}
+                    </p>
+                    {% else %}
+                    <p class="status-occupied">
+                        <i class="fas fa-times-circle me-1"></i> Occupied until {{ current_status.reservation.end_time|time:"H:i" }}
+                        <br>
+                        <small>{{ current_status.reservation.title }}</small>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i> Back
+                    </a>
+                    <div>
+                        <a href="{% url 'room-calendar' room.id %}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-calendar-alt me-1"></i> View Calendar
+                        </a>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'create-reservation' room.id %}" class="btn btn-primary">
+                            <i class="fas fa-calendar-plus me-1"></i> Reserve
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Available Today</h5>
+            </div>
+            <div class="card-body">
+                {% if available_slots %}
+                <div class="list-group">
+                    {% for start, end in available_slots %}
+                    <div class="time-slot">
+                        {{ start|time:"H:i" }} - {{ end|time:"H:i" }}
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'create-reservation' room.id %}?date={{ today|date:'Y-m-d' }}&start={{ start|time:'H:i' }}&end={{ end|time:'H:i' }}" class="btn btn-sm btn-primary float-end">
+                            <i class="fas fa-plus"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-center">No available time slots today.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Upcoming Reservations</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if upcoming_reservations %}
+                <div class="list-group list-group-flush">
+                    {% for reservation in upcoming_reservations %}
+                    <div class="list-group-item bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ reservation.title }}</h6>
+                                <small>{{ reservation.date }} | {{ reservation.start_time|time:"H:i" }} - {{ reservation.end_time|time:"H:i" }}</small>
+                            </div>
+                            <span class="badge bg-primary">{{ reservation.user.username }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="card-body">
+                    <p class="text-center">No upcoming reservations.</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'room-calendar' room.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-calendar-alt me-1"></i> View All
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

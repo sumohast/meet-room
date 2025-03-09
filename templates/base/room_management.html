@@ -1,0 +1,89 @@
+{% extends 'main.html' %}
+{% load static %}
+
+{% block title %}Room Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'admin-dashboard' %}">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active">Room Management</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="mb-0"><i class="fas fa-door-open me-2"></i>Room Management</h1>
+        <a href="{% url 'create-room' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-1"></i> Add New Room
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-0">
+                {% if rooms %}
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Capacity</th>
+                                <th>Features</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for room in rooms %}
+                            <tr>
+                                <td>{{ room.name }}</td>
+                                <td>{{ room.capacity }} people</td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% if room.has_projector %}
+                                        <span class="badge bg-secondary">Projector</span>
+                                        {% endif %}
+                                        {% if room.has_whiteboard %}
+                                        <span class="badge bg-secondary">Whiteboard</span>
+                                        {% endif %}
+                                        {% if room.has_video_conference %}
+                                        <span class="badge bg-secondary">Video Conference</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ room.description|truncatechars:50 }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'room-detail' room.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'update-room' room.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'delete-room' room.id %}" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="card-body">
+                    <p class="text-center">No rooms available. <a href="{% url 'create-room' %}">Create a new room</a>.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

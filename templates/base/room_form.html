@@ -1,111 +1,110 @@
-{% extends 'base/main.html' %}
+{% extends 'main.html' %}
+{% load static %}
 
-{% block title %}
-    {% if page == 'update' %}
-        Update Room
-    {% else %}
-        Create Room
-    {% endif %}
-{% endblock %}
+{% block title %}{% if room %}Update {{ room.name }}{% else %}Create Room{% endif %}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header bg-transparent">
-                    <h3 class="mb-0">
-                        {% if page == 'update' %}
-                            <i class="fas fa-edit me-2"></i>Update Room
-                        {% else %}
-                            <i class="fas fa-plus-circle me-2"></i>Create Room
-                        {% endif %}
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="">
-                        {% csrf_token %}
-                        
-                        <div class="mb-3">
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'admin-dashboard' %}">Admin Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'room-management' %}">Room Management</a></li>
+                <li class="breadcrumb-item active">{% if room %}Update {{ room.name }}{% else %}Create Room{% endif %}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">
+                    {% if room %}
+                    <i class="fas fa-edit me-2"></i>Update Room
+                    {% else %}
+                    <i class="fas fa-plus-circle me-2"></i>Create Room
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
                             <label for="{{ form.name.id_for_label }}" class="form-label">Room Name</label>
                             {{ form.name }}
                             {% if form.name.errors %}
-                                <div class="text-danger small mt-1">{{ form.name.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="topic" class="form-label">Topic</label>
-                            <div class="input-group">
-                                <input type="text" name="topic" id="topic" list="topic-list" class="form-control" value="{{ room.topic.name }}" placeholder="Select or create a topic">
-                                <datalist id="topic-list">
-                                    {% for topic in topics %}
-                                        <option value="{{ topic.name }}">
-                                    {% endfor %}
-                                </datalist>
+                            <div class="text-danger mt-1">
+                                {{ form.name.errors }}
                             </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity</label>
-                            {{ form.capacity }}
-                            {% if form.capacity.errors %}
-                                <div class="text-danger small mt-1">{{ form.capacity.errors }}</div>
                             {% endif %}
                         </div>
-                        
-                        <div class="mb-3">
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
                             <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
                             {{ form.description }}
                             {% if form.description.errors %}
-                                <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                            <div class="text-danger mt-1">
+                                {{ form.description.errors }}
+                            </div>
                             {% endif %}
                         </div>
-                        
-                        <div class="mb-4">
-                            <label class="form-label">Room Features</label>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-check mb-2">
-                                        {{ form.has_projector }}
-                                        <label class="form-check-label" for="{{ form.has_projector.id_for_label }}">
-                                            <i class="fas fa-projector me-1"></i> Projector
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check mb-2">
-                                        {{ form.has_whiteboard }}
-                                        <label class="form-check-label" for="{{ form.has_whiteboard.id_for_label }}">
-                                            <i class="fas fa-chalkboard me-1"></i> Whiteboard
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check mb-2">
-                                        {{ form.has_video_conference }}
-                                        <label class="form-check-label" for="{{ form.has_video_conference.id_for_label }}">
-                                            <i class="fas fa-video me-1"></i> Video Conference
-                                        </label>
-                                    </div>
-                                </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.capacity.id_for_label }}" class="form-label">Capacity</label>
+                            {{ form.capacity }}
+                            {% if form.capacity.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.capacity.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.has_projector }}
+                                <label class="form-check-label" for="{{ form.has_projector.id_for_label }}">
+                                    Has Projector
+                                </label>
                             </div>
                         </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left me-1"></i> Cancel
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                {% if page == 'update' %}
-                                    <i class="fas fa-save me-1"></i> Update Room
-                                {% else %}
-                                    <i class="fas fa-plus-circle me-1"></i> Create Room
-                                {% endif %}
-                            </button>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.has_whiteboard }}
+                                <label class="form-check-label" for="{{ form.has_whiteboard.id_for_label }}">
+                                    Has Whiteboard
+                                </label>
+                            </div>
                         </div>
-                    </form>
-                </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.has_video_conference }}
+                                <label class="form-check-label" for="{{ form.has_video_conference.id_for_label }}">
+                                    Has Video Conference
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'room-management' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> 
+                            {% if room %}Update Room{% else %}Create Room{% endif %}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

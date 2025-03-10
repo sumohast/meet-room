@@ -81,27 +81,26 @@ class ReservationForm(ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        time_slot = cleaned_data.get('time_slot')
         date = cleaned_data.get('date')
+        time_slot = cleaned_data.get('time_slot')
         room = cleaned_data.get('room')
         
-        if time_slot and date:
+        if date and time_slot:
             # Extract start_time and end_time from time_slot
             start_time_str, end_time_str = time_slot.split('-')
             start_time = datetime.strptime(start_time_str, '%H:%M').time()
             end_time = datetime.strptime(end_time_str, '%H:%M').time()
             
-            # Add start_time and end_time to cleaned_data
+            # Store these in cleaned_data for the view to use
             cleaned_data['start_time'] = start_time
             cleaned_data['end_time'] = end_time
             
             # Check if the reservation is in the past
             today = datetime.now().date()
-            if date < today:
-                raise forms.ValidationError('Cannot make reservations in the past')
+            current_time = datetime.now().time()
             
-            # If reservation is for today, check time
-            if date == today and start_time < datetime.now().time():
+            # Only check for past reservations if date is today
+            if date == today and start_time < current_time:
                 raise forms.ValidationError('Cannot make reservations in the past')
         
             # Check for overlapping reservations

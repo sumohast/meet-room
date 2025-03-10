@@ -108,41 +108,50 @@ def room_calendar(request, room_id):
 def create_reservation(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     
-    # Get initial values from query parameters
+    # Get initial data from query parameters
     initial_data = {}
-    if 'date' in request.GET:
-        try:
-            initial_data['date'] = datetime.strptime(request.GET.get('date'), '%Y-%m-%d').date()
-        except ValueError:
-            pass
+    if request.GET.get('date'):
+        initial_data['date'] = request.GET.get('date')
     
-    if 'start' in request.GET and 'end' in request.GET:
-        try:
-            initial_data['start_time'] = datetime.strptime(request.GET.get('start'), '%H:%M').time()
-            initial_data['end_time'] = datetime.strptime(request.GET.get('end'), '%H:%M').time()
-        except ValueError:
-            pass
-    
-    form = ReservationForm(initial=initial_data)
+    # Handle time slot from query parameters
+    start_time = request.GET.get('start')
+    end_time = request.GET.get('end')
+    if start_time and end_time:
+        initial_data['time_slot'] = f"{start_time}-{end_time}"
     
     if request.method == 'POST':
-        form = ReservationForm(request.POST)
+        # Print POST data for debugging
+        print(f"POST data: {request.POST}")
+        
+        form = ReservationForm(request.POST, initial=initial_data)
         if form.is_valid():
+            # Form is valid, create the reservation
             reservation = form.save(commit=False)
-            reservation.user = request.user
             reservation.room = room
+            reservation.user = request.user
             
-            # Check for overlapping reservations
-            date = form.cleaned_data.get('date')
-            start_time = form.cleaned_data.get('start_time')
-            end_time = form.cleaned_data.get('end_time')
+            # Extract start_time and end_time from time_slot
+            time_slot = form.cleaned_data.get('time_slot')
+            if not time_slot and 'time_slot' in initial_data:
+                # Use initial time_slot if not in form data
+                time_slot = initial_data['time_slot']
+                
+            start_time_str, end_time_str = time_slot.split('-')
+            reservation.start_time = datetime.strptime(start_time_str, '%H:%M').time()
+            reservation.end_time = datetime.strptime(end_time_str, '%H:%M').time()
             
-            if not room.is_available(date, start_time, end_time):
-                messages.error(request, 'This time slot is already booked')
-            else:
-                reservation.save()
-                messages.success(request, f'Reservation for {room.name} created successfully!')
-                return redirect('user-reservations')
+            # Save the reservation to the database
+            reservation.save()
+            
+            # Show success message and redirect
+            messages.success(request, 'Reservation created successfully!')
+            return redirect('room-detail', pk=room.id)
+        else:
+            # Form is invalid, print errors for debugging
+            print(f"Form errors: {form.errors}")
+            messages.error(request, 'There was an error with your reservation. Please check the form.')
+    else:
+        form = ReservationForm(initial=initial_data)
     
     context = {
         'form': form,
@@ -384,45 +393,4 @@ def register_page(request):
     context = {'form': form}
     return render(request, 'base/register.html', context)
 
-@login_required
-def quick_reserve(request, room_id):
-    room = get_object_or_404(Room, id=room_id)
-    
-    if request.method == 'POST':
-        date_str = request.POST.get('date')
-        start_str = request.POST.get('start')
-        end_str = request.POST.get('end')
-        
-        try:
-            date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            start_time = datetime.strptime(start_str, '%H:%M').time()
-            end_time = datetime.strptime(end_str, '%H:%M').time()
-            
-            # Check if the time slot is available
-            if room.is_available(date, start_time, end_time):
-                # Create the reservation with a default title
-                title = f"Quick reservation - {room.name}"
-                reservation = Reservation.objects.create(
-                    user=request.user,
-                    room=room,
-                    title=title,
-                    date=date,
-                    start_time=start_time,
-                    end_time=end_time,
-                    description="Quick reservation"
-                )
-                messages.success(request, f'Reservation for {room.name} created successfully!')
-            else:
-                messages.error(request, 'This time slot is already booked')
-                
-            # Redirect back to the page they came from
-            referer = request.META.get('HTTP_REFERER')
-            if referer:
-                return redirect(referer)
-            return redirect('room-detail', room_id=room_id)
-            
-        except (ValueError, TypeError):
-            messages.error(request, 'Invalid date or time format')
-    
-    # If not POST or there was an error, redirect to room detail
-    return redirect('room-detail', room_id=room_id)
+# quick_reserve view has been removed

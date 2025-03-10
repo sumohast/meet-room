@@ -36,6 +36,11 @@ class RoomForm(ModelForm):
         }
 
 class ReservationForm(ModelForm):
+    time_slot = forms.CharField(
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+    
     participants_emails = forms.CharField(
         required=False, 
         widget=forms.Textarea(attrs={
@@ -47,48 +52,70 @@ class ReservationForm(ModelForm):
     
     class Meta:
         model = Reservation
-        fields = ['title', 'description', 'date', 'start_time', 'end_time', 'participants_emails']
+        fields = ['title', 'description', 'date', 'participants_emails']
         widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Meeting title'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Meeting description'}),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'start_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'end_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'participants_emails': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        if 'initial' in kwargs and 'time_slot' in kwargs['initial']:
+            initial_time_slot = kwargs['initial']['time_slot']
+            self.fields['time_slot'].widget.choices = [(initial_time_slot, initial_time_slot)]
+        else:
+            time_slots = [
+                ('08:00-09:00', '08:00 - 09:00'),
+                ('09:00-10:00', '09:00 - 10:00'),
+                ('10:00-11:00', '10:00 - 11:00'),
+                ('11:00-12:00', '11:00 - 12:00'),
+                ('13:00-14:00', '13:00 - 14:00'),
+                ('14:00-15:00', '14:00 - 15:00'),
+                ('15:00-16:00', '15:00 - 16:00'),
+                ('16:00-17:00', '16:00 - 17:00'),
+            ]
+            self.fields['time_slot'].widget.choices = time_slots
+
     def clean(self):
         cleaned_data = super().clean()
-        start_time = cleaned_data.get('start_time')
-        end_time = cleaned_data.get('end_time')
+        time_slot = cleaned_data.get('time_slot')
         date = cleaned_data.get('date')
         room = cleaned_data.get('room')
         
-        # Check if end time is after start time
-        if start_time and end_time and start_time >= end_time:
-            raise forms.ValidationError('End time must be after start time')
-        
-        # Check if the reservation is in the past
-        if date:
+        if time_slot and date:
+            # Extract start_time and end_time from time_slot
+            start_time_str, end_time_str = time_slot.split('-')
+            start_time = datetime.strptime(start_time_str, '%H:%M').time()
+            end_time = datetime.strptime(end_time_str, '%H:%M').time()
+            
+            # Add start_time and end_time to cleaned_data
+            cleaned_data['start_time'] = start_time
+            cleaned_data['end_time'] = end_time
+            
+            # Check if the reservation is in the past
             today = datetime.now().date()
             if date < today:
                 raise forms.ValidationError('Cannot make reservations in the past')
             
             # If reservation is for today, check time
-            if date == today and start_time and start_time < datetime.now().time():
+            if date == today and start_time < datetime.now().time():
                 raise forms.ValidationError('Cannot make reservations in the past')
         
-        # Check for overlapping reservations
-        if date and start_time and end_time and room:
-            overlapping = Reservation.objects.filter(
-                room=room,
-                date=date,
-            ).exclude(
-                pk=self.instance.pk if self.instance and self.instance.pk else None
-            ).filter(
-                models.Q(start_time__lt=end_time, end_time__gt=start_time)
-            )
-            
-            if overlapping.exists():
-                raise forms.ValidationError('This time slot is already booked')
+            # Check for overlapping reservations
+            if date and start_time and end_time and room:
+                overlapping = Reservation.objects.filter(
+                    room=room,
+                    date=date,
+                ).exclude(
+                    pk=self.instance.pk if self.instance and self.instance.pk else None
+                ).filter(
+                    models.Q(start_time__lt=end_time, end_time__gt=start_time)
+                )
+                
+                if overlapping.exists():
+                    raise forms.ValidationError('This time slot is already booked')
                 
         return cleaned_data

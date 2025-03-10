@@ -69,15 +69,9 @@
                             
                             {% if user.is_authenticated %}
                             <div class="text-center mt-3">
-                                <form method="POST" action="{% url 'quick-reserve' room.id %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="date" value="{{ date|date:'Y-m-d' }}">
-                                    <input type="hidden" name="start" value="09:00">
-                                    <input type="hidden" name="end" value="10:00">
-                                    <button type="submit" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-plus me-1"></i> Quick Reserve (9-10 AM)
-                                    </button>
-                                </form>
+                                <a href="{% url 'create-reservation' room.id %}?date={{ date|date:'Y-m-d' }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-plus me-1"></i> Reserve
+                                </a>
                             </div>
                             {% endif %}
                         </div>

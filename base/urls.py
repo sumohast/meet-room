@@ -11,7 +11,6 @@ urlpatterns = [
     path('my-reservations/', views.user_reservations, name="user-reservations"),
     path('cancel-reservation/<int:reservation_id>/', views.cancel_reservation, name='cancel-reservation'),
     
-    
     # Admin routes
     path('admin-dashboard/', views.admin_dashboard, name="admin-dashboard"),
     path('admin-reservations/', views.admin_reservations, name="admin-reservations"),
@@ -24,6 +23,5 @@ urlpatterns = [
     path('login/', views.login_page, name="login"),
     path('logout/', views.logout_user, name="logout"),
     path('register/', views.register_page, name="register"),
-    path('room/<int:room_id>/quick-reserve/', views.quick_reserve, name='quick-reserve'),
-
+    # Removed the quick-reserve URL pattern
 ]

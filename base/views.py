@@ -53,6 +53,20 @@ def room_detail(request, pk):
         room=room,
         date__gte=today
     ).order_by('date', 'start_time')[:5]
+    
+    # Calculate total reservations for today with active participants count
+    today_reservations = Reservation.objects.filter(
+        room=room,
+        date=today
+    )
+    
+    # Check if the room is at full capacity for today
+    room_is_full = False
+    active_reservation = None
+    if current_status['status'] == 'occupied':
+        active_reservation = current_status['reservation']
+        if hasattr(active_reservation, 'participant_count') and active_reservation.participant_count >= room.capacity:
+            room_is_full = True
 
     context = {
         'room': room, 
@@ -60,6 +74,8 @@ def room_detail(request, pk):
         'available_slots': available_slots,
         'today': today,
         'upcoming_reservations': upcoming_reservations,
+        'room_is_full': room_is_full,
+        'active_reservation': active_reservation,
     }
     return render(request, 'base/room_detail.html', context)
 
@@ -110,7 +126,10 @@ def create_reservation(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     
     # Get initial data from query parameters
-    initial_data = {}
+    initial_data = {
+        'room': room,  # Pass the room object to the form
+    }
+    
     if request.GET.get('date'):
         initial_data['date'] = request.GET.get('date')
     
@@ -126,7 +145,18 @@ def create_reservation(request, room_id):
         
         form = ReservationForm(request.POST, initial=initial_data)
         if form.is_valid():
-            # Form is valid, create the reservation
+            # Form is valid, check room capacity
+            participant_count = form.cleaned_data.get('participant_count')
+            
+            if participant_count > room.capacity:
+                messages.error(request, f'The number of participants ({participant_count}) exceeds the room capacity ({room.capacity}).')
+                context = {
+                    'form': form,
+                    'room': room,
+                }
+                return render(request, 'base/reservation_form.html', context)
+                
+            # Create the reservation
             reservation = form.save(commit=False)
             reservation.room = room
             reservation.user = request.user
@@ -343,6 +373,7 @@ def send_reservation_reminders():
             # Mark as sent
             reservation.reminder_sent = True
             reservation.save()
+            print(f"Reminder sent for reservation: {reservation}")
 
 # Authentication Views
 def login_page(request):

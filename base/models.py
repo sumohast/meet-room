@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime, timedelta
+# در models.py در کلاس Reservation
 
 class Room(models.Model):
     name = models.CharField(max_length=100)
@@ -78,6 +79,7 @@ class Room(models.Model):
         return available_slots
 
 class Reservation(models.Model):
+    participant_count = models.IntegerField(default=1, help_text="Number of participants")
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)

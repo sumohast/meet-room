@@ -15,7 +15,19 @@
     </div>
 </div>
 
-<div class="row">
+{% if form.errors %}
+  <div class="alert alert-danger">
+    Please correct the errors below.
+  </div>
+{% endif %}
+
+{% if room_is_full %}
+  <div class="alert alert-warning">
+    This room is currently at full capacity. No more reservations can be made at this time.
+  </div>
+  <a href="{% url 'room-detail' room.id %}" class="btn btn-secondary">Back to Room</a>
+{% else %}
+  <div class="row">
     <div class="col-lg-8 mx-auto">
         <div class="card">
             <div class="card-header">
@@ -85,6 +97,18 @@
                         </div>
                     </div>
                     
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="{{ form.participant_count.id_for_label }}" class="form-label">Number of Participants</label>
+                            {{ form.participant_count }}
+                            {% if form.participant_count.errors %}
+                            <div class="text-danger mt-1">
+                                {{ form.participant_count.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     <div class="row">
                         <div class="col-12">
                             <div class="d-flex justify-content-between">
@@ -102,4 +126,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %} 

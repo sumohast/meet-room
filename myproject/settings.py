@@ -133,3 +133,12 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SITE_ID = 1
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # یا سرور SMTP دیگری که استفاده می‌کنید
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'sumohast@gmail.com'  # ایمیل شما
+EMAIL_HOST_PASSWORD = 'jpne cswd ghhy ryub'  # رمز عبور ایمیل یا App Password
+DEFAULT_FROM_EMAIL = 'sumohast@gmail.com'  # ایمیل فرستنده

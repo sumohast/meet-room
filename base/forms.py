@@ -41,6 +41,12 @@ class ReservationForm(ModelForm):
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
     
+    participant_count = forms.IntegerField(
+        required=True,
+        min_value=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    
     participants_emails = forms.CharField(
         required=False, 
         widget=forms.Textarea(attrs={
@@ -52,7 +58,7 @@ class ReservationForm(ModelForm):
     
     class Meta:
         model = Reservation
-        fields = ['title', 'description', 'date', 'participants_emails']
+        fields = ['title', 'description', 'date', 'participant_count', 'participants_emails']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -83,6 +89,8 @@ class ReservationForm(ModelForm):
         cleaned_data = super().clean()
         date = cleaned_data.get('date')
         time_slot = cleaned_data.get('time_slot')
+        participant_count = cleaned_data.get('participant_count')
+        room = self.initial.get('room') if hasattr(self, 'initial') and 'room' in self.initial else None
         
         if date and time_slot:
             # Extract start_time and end_time from time_slot
@@ -104,5 +112,9 @@ class ReservationForm(ModelForm):
                 # Comment this out when in production
                 # raise forms.ValidationError('Cannot make reservations in the past')
                 pass
+                
+        # Check room capacity if room and participant_count are available
+        if room and participant_count and participant_count > room.capacity:
+            raise forms.ValidationError(f'The number of participants ({participant_count}) exceeds the room capacity ({room.capacity}).')
         
         return cleaned_data

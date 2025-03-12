@@ -322,6 +322,7 @@ def update_room(request, pk):
     return render(request, 'base/room_form.html', context)
 
 @staff_member_required
+
 def delete_room(request, pk):
     room = get_object_or_404(Room, id=pk)
     
@@ -347,9 +348,7 @@ def send_reservation_reminders():
         if participants:
             subject = f"Reminder: Meeting in {reservation.room.name} tomorrow"
             message = f"""
-            Hello,
-            
-            This is a reminder that you have a meeting scheduled for tomorrow:
+            Hello ,This is a reminder that you have a meeting scheduled for tomorrow:
             
             Title: {reservation.title}
             Room: {reservation.room.name}
@@ -360,6 +359,7 @@ def send_reservation_reminders():
             {reservation.description}
             
             Please be on time.
+            http://localhost:8000
             """
             
             send_mail(

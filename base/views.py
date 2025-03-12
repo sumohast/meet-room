@@ -12,6 +12,7 @@ from django.conf import settings
 from datetime import datetime, date, timedelta
 from .models import Room, Reservation
 from .forms import RoomForm, UserCreateForm, ReservationForm
+from django.db import models
 
 def home(request):
     # Query all rooms

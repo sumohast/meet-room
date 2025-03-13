@@ -36,7 +36,12 @@
                         <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">
                             <i class="fas fa-home me-1"></i> Home
                         </a>
+                        
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'about' in request.path %}active{% endif %}" href="{% url 'about' %}">
+                            <i class="fas fa-info-circle me-1"></i> About
+                        </a>
                     {% if user.is_authenticated %}
                         <li class="nav-item">
                             <a class="nav-link {% if 'my-reservations' in request.path %}active{% endif %}" href="{% url 'user-reservations' %}">

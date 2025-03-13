@@ -1,0 +1,57 @@
+{% extends 'main.html' %}
+{% load static %}
+
+{% block title %}About MeetingSpace{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                <li class="breadcrumb-item active">About</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0"><i class="fas fa-info-circle me-2"></i>About MeetingSpace</h2>
+            </div>
+            <div class="card-body">
+                <h4 class="mb-3">Project Overview</h4>
+                <p>
+                    MeetingSpace is a comprehensive meeting room reservation system designed to streamline the process of booking and managing meeting spaces within an organization. The platform provides an intuitive interface for users to find available rooms, make reservations, and receive notifications about their bookings.
+                </p>
+                
+                <h4 class="mb-3 mt-4">Key Features</h4>
+                <ul>
+                    <li>Easy room browsing and availability checking</li>
+                    <li>Seamless reservation creation with participant notification</li>
+                    <li>Calendar view for room availability</li>
+                    <li>Automated email reminders for upcoming meetings</li>
+                    <li>Admin dashboard for comprehensive management</li>
+                    <li>User-friendly interface with responsive design</li>
+                    <li>Dark theme for comfortable viewing</li>
+                </ul>
+                
+                <h4 class="mb-3 mt-4">Connect With Me</h4>
+                <p>
+                    <i class="fab fa-github me-2"></i> GitHub: <a href="https://github.com/hajmoha/" target="_blank">@hajmoha</a>
+                </p>
+                <p>
+                    <i class="fab fa-telegram me-2"></i> Telegram: <a href="https://t.me/mrdevnull" target="_blank">@mrdevnull</a>
+                </p>
+                
+                <h4 class="mb-3 mt-4">Technology Stack</h4>
+                <p>
+                    This project is built using Django, a high-level Python web framework, along with Bootstrap for responsive design. It features a custom dark theme, email integration for notifications, and a clean, intuitive user interface.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

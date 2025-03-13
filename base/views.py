@@ -495,4 +495,8 @@ def register_page(request):
     context = {'form': form}
     return render(request, 'base/register.html', context)
 
-# quick_reserve view has been removed
+
+def about(request):
+    return render(request, 'base/about.html')
+
+# End !

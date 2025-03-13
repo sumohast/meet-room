@@ -173,10 +173,58 @@ def create_reservation(request, room_id):
             
             # Save the reservation to the database
             reservation.save()
+            print("========= SENDING MEETING CREATION NOTIFICATION =========")
+            print(f"Reservation created: {reservation.id} - {reservation.title}")
+            participants = reservation.get_participant_list()
+            if participants:
+                print(f"Sending notification to {len(participants)} participants: {', '.join(participants)}")
+                
+                subject = f"📅 Meeting Invite: {reservation.title}"
+                message = f"""
+                Hi there!
+
+                You're invited to an upcoming meeting:
+
+                🗓️ **{reservation.title}**
+                📍 {reservation.room.name}
+                📆 {reservation.date}
+                ⏰ {reservation.start_time.strftime('%H:%M')} - {reservation.end_time.strftime('%H:%M')}
+
+                💡 **What's it about:**
+                {reservation.description}
+
+                We look forward to seeing you there!
+                Please add this to your calendar.
+                [View Details](http://localhost:8000)
+                """
+                
+                try:
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=participants,
+                        fail_silently=False,
+                    )
+                    print(f"Notification emails sent successfully!")
+                    
+                    # چون ایمیل ارسال شده، reservation.reminder_sent را true کنید
+                    # تا در ارسال زمانبندی شده دوباره ارسال نشود
+                    reservation.reminder_sent = True
+                    reservation.save(update_fields=['reminder_sent'])
+                    
+                except Exception as e:
+                    print(f"ERROR sending notification emails: {str(e)}")
+            else:
+                print("No participant emails specified. No notifications sent.")
             
-            # Show success message and redirect
-            messages.success(request, 'Reservation created successfully!')
+            # نمایش پیام موفقیت و ریدایرکت
+            messages.success(request, 'Reservation created successfully and notifications sent!')
             return redirect('room-detail', pk=room.id)
+
+            # Show success message and redirect
+            #messages.success(request, 'Reservation created successfully!')
+            #return redirect('room-detail', pk=room.id)
         else:
             # Form is invalid, print errors for debugging
             print(f"Form errors: {form.errors}")
@@ -334,18 +382,33 @@ def delete_room(request, pk):
     return render(request, 'base/delete.html', {'obj': room, 'type': 'room'})
 
 # Email reminder function (to be scheduled with a task scheduler like Celery)
+# Email reminder function (to be scheduled with a task scheduler like Celery)
 def send_reservation_reminders():
     """Send email reminders for upcoming reservations"""
+    print("========= STARTING EMAIL REMINDER PROCESS =========")
+    print(f"Current time: {datetime.now()}")
+    
     # Get reservations for tomorrow
     tomorrow = datetime.now().date() + timedelta(days=1)
+    print(f"Looking for reservations on: {tomorrow}")
+    
     upcoming_reservations = Reservation.objects.filter(
         date=tomorrow,
         reminder_sent=False
     )
     
+    print(f"Found {upcoming_reservations.count()} reservations that need reminders")
+    
     for reservation in upcoming_reservations:
+        print(f"\nProcessing reservation: {reservation.id} - {reservation.title}")
+        print(f"Room: {reservation.room.name}")
+        print(f"Time: {reservation.start_time} - {reservation.end_time}")
+        
         participants = reservation.get_participant_list()
+        print(f"Participant emails extracted: {len(participants)}")
         if participants:
+            print(f"Sending emails to: {', '.join(participants)}")
+            
             subject = f"Reminder: Meeting in {reservation.room.name} tomorrow"
             message = f"""
             Hello ,This is a reminder that you have a meeting scheduled for tomorrow:
@@ -362,19 +425,26 @@ def send_reservation_reminders():
             http://localhost:8000
             """
             
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=participants,
-                fail_silently=False,
-            )
-            
-            # Mark as sent
-            reservation.reminder_sent = True
-            reservation.save()
-            print(f"Reminder sent for reservation: {reservation}")
-
+            try:
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=participants,
+                    fail_silently=False,
+                )
+                print(f"Email sent successfully!")
+                
+                # Mark as sent
+                reservation.reminder_sent = True
+                reservation.save()
+                print(f"Reservation {reservation.id} marked as reminded")
+            except Exception as e:
+                print(f"ERROR sending email: {str(e)}")
+        else:
+            print("No participant emails found, skipping this reservation")
+    
+    print("\n========= EMAIL REMINDER PROCESS COMPLETED =========")
 # Authentication Views
 def login_page(request):
     if request.user.is_authenticated:

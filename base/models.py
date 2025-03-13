@@ -115,6 +115,13 @@ class Reservation(models.Model):
     
     def get_participant_list(self):
         """Returns list of participant emails"""
+        print(f"Getting participant list for reservation: {self.id}")
+        print(f"Raw participants_emails field: '{self.participants_emails}'")
+        
         if not self.participants_emails:
+            print("No participants found")
             return []
-        return [email.strip() for email in self.participants_emails.split(',')]
+        
+        emails = [email.strip() for email in self.participants_emails.split(',')]
+        print(f"Extracted {len(emails)} email(s): {emails}")
+        return emails

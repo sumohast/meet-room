@@ -145,6 +145,14 @@ def create_reservation(request, room_id):
         
         form = ReservationForm(request.POST, initial=initial_data)
         if form.is_valid():
+            date = form.cleaned_data['date']
+            start_time = form.cleaned_data['start_time']
+            end_time = form.cleaned_data['end_time']
+            
+            if not room.is_available(date, start_time, end_time):
+                messages.error(request, 'The selected time slot is not available. Please choose another time.')
+                return render(request, 'base/reservation_form.html', {'form': form, 'room': room})
+                
             # Form is valid, check room capacity
             participant_count = form.cleaned_data.get('participant_count')
             

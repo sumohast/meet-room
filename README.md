@@ -41,8 +41,7 @@ A comprehensive Django web application for managing and booking meeting rooms wi
 * Create a superuser:
     * `python manage.py createsuperuser`
 * Update email settings in myproject/settings.py with your SMTP credentials:
-    * `![Screenshot From 2025-03-14 21-00-54](https://github.com/user-attachments/assets/fb8d6489-e6ea-4cba-932a-54085d62c1c4)
-EMAIL_HOST_USER = 'your-email@example.com'`
+    * `EMAIL_HOST_USER = 'your-email@example.com'`
     * `EMAIL_HOST_PASSWORD = 'your-password'`
     * `DEFAULT_FROM_EMAIL = 'your-email@example.com'`
 * Run the development server:

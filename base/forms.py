@@ -6,6 +6,7 @@ from django.db import models
 from .models import Room, Reservation
 from datetime import datetime, timedelta
 
+# forms.py use to create forms for the application for registration, login, room creation, and reservation creation.
 
 class UserCreateForm(UserCreationForm):
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'form-control'}))
@@ -74,6 +75,8 @@ class ReservationForm(ModelForm):
             self.fields['time_slot'].widget.choices = [(initial_time_slot, initial_time_slot)]
         else:
             time_slots = [
+                ('06:00-07:00', '06:00 - 07:00'),
+                ('07:00-08:00', '07:00 - 08:00'),
                 ('08:00-09:00', '08:00 - 09:00'),
                 ('09:00-10:00', '09:00 - 10:00'),
                 ('10:00-11:00', '10:00 - 11:00'),
@@ -107,11 +110,9 @@ class ReservationForm(ModelForm):
             current_time = datetime.now().time()
             
             # Only check for past reservations if date is today and in the past
-            if date == today and start_time < current_time:
-                # For testing purposes, disable this validation
-                # Comment this out when in production
-                # raise forms.ValidationError('Cannot make reservations in the past')
-                pass
+            if date < today or (date == today and start_time < current_time):
+                raise forms.ValidationError('Cannot make reservations in the past')
+                # pass
                 
         # Check room capacity if room and participant_count are available
         if room and participant_count and participant_count > room.capacity:

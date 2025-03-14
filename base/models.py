@@ -13,13 +13,14 @@ class Room(models.Model):
     created = models.DateTimeField(auto_now_add=True) 
     updated = models.DateTimeField(auto_now=True)  
     
-    class Meta:
+    class Meta: # this class is used to define metadata for the model , for example when we want to sort the rooms by name
         ordering = ['name']
+        # ordering = ['-name'] # to sort in descending order
     
-    def __str__(self):
+    def __str__(self): # this function is used to return a string representation of the object , for example when we want to print the object
         return self.name
     
-    def is_available(self, date, start_time, end_time):
+    def is_available(self, date, start_time, end_time): # this function check if the room is available for the specified time slot
         """Check if room is available for the specified time slot"""
         overlapping = self.reservation_set.filter(
             date=date,
@@ -28,7 +29,7 @@ class Room(models.Model):
         )
         return not overlapping.exists()
     
-    def get_current_status(self):
+    def get_current_status(self): # this function returns the current status of the room (occupied/free)
         """Returns the current status of the room (occupied/free)"""
         now = datetime.now()
         today = now.date()
@@ -54,7 +55,7 @@ class Room(models.Model):
                 ).order_by('start_time').first()
             }
     
-    def get_available_time_slots(self, date):
+    def get_available_time_slots(self, date): # this function returns available time slots for a given date
         """Returns available time slots for a given date"""
         # Define business hours (8 AM to 6 PM, 1-hour slots)
         business_hours = [(datetime.strptime(f"{i}:00", "%H:%M").time(), 
@@ -89,7 +90,7 @@ class Reservation(models.Model):
     end_time = models.TimeField()
     participants_emails = models.TextField(null=True, blank=True, 
                                           help_text="Enter email addresses separated by commas")
-    reminder_sent = models.BooleanField(default=False)
+    reminder_sent = models.BooleanField(default=False) # this field is used to track if a reminder has been sent for this reservation
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     
@@ -106,14 +107,15 @@ class Reservation(models.Model):
     def __str__(self):
         return f"{self.title} - {self.room.name} ({self.date})"
     
-    def is_active(self):
+
+    def is_active(self): # this function checks if the reservation is currently active
         """Check if reservation is currently active"""
         now = datetime.now()
         reservation_start = datetime.combine(self.date, self.start_time)
         reservation_end = datetime.combine(self.date, self.end_time)
         return reservation_start <= now <= reservation_end
     
-    def get_participant_list(self):
+    def get_participant_list(self): # this function returns a list of participant emails
         """Returns list of participant emails"""
         print(f"Getting participant list for reservation: {self.id}")
         print(f"Raw participants_emails field: '{self.participants_emails}'")

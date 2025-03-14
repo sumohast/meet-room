@@ -79,7 +79,7 @@ def room_detail(request, pk):
     }
     return render(request, 'base/room_detail.html', context)
 
-@login_required
+@login_required # this decorator ensures that the user is logged in before accessing the view
 def room_calendar(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     
@@ -289,6 +289,7 @@ def cancel_reservation(request, reservation_id):
     return render(request, 'base/delete.html', context)
 
 # Admin Views
+@login_required
 @staff_member_required
 def admin_dashboard(request):
     rooms = Room.objects.all()
@@ -498,5 +499,6 @@ def register_page(request):
 
 def about(request):
     return render(request, 'base/about.html')
+
 
 # End !

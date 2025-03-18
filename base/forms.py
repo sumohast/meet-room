@@ -26,14 +26,20 @@ class UserCreateForm(UserCreationForm):
 class RoomForm(ModelForm):
     class Meta:
         model = Room
-        fields = ['name', 'description', 'capacity', 'has_projector', 'has_whiteboard', 'has_video_conference']
+        fields = ['name', 'description', 'capacity', 'has_projector', 'projector_details', 'has_whiteboard', 'whiteboard_type', 'has_video_conference', 'video_conference_system']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'capacity': forms.NumberInput(attrs={'class': 'form-control'}),
+
             'has_projector': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'projector_details': forms.TextInput(attrs={'class': 'form-control'}),
+
             'has_whiteboard': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'whiteboard_type': forms.Select(attrs={'class': 'form-control'}),
+
             'has_video_conference': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'video_conference_system': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 class ReservationForm(ModelForm):
@@ -57,9 +63,14 @@ class ReservationForm(ModelForm):
         })
     )
     
+    need_projector = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    need_whiteboard = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    need_video_conference = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    special_requirements = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}))
+
     class Meta:
         model = Reservation
-        fields = ['title', 'description', 'date', 'participant_count', 'participants_emails']
+        fields = ['title', 'description', 'date', 'participant_count', 'participants_emails', 'need_projector', 'need_whiteboard', 'need_video_conference', 'special_requirements']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),

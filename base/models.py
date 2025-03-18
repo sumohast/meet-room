@@ -6,9 +6,16 @@ from datetime import datetime, timedelta
 class Room(models.Model):
     name = models.CharField(max_length=100)
     capacity = models.IntegerField(default=10)
-    has_projector = models.BooleanField(default=False)
+    # projector options 
+    has_projector = models.BooleanField(default=False )
+    projector_details = models.CharField(max_length=200, blank=True, null=True, help_text="Model and specifications of the projector")
+    # witeboard options 
     has_whiteboard = models.BooleanField(default=False)
+    whiteboard_type = models.CharField(max_length=100, choices=[('physical', 'Physical Whiteboard'), ('digital', 'Digital Whiteboard')], blank=True, null=True) # whai is pysical witeboard and Digital witeboard ?
+    # video options 
     has_video_conference = models.BooleanField(default=False)
+    video_conference_system = models.CharField(max_length=200, blank=True, null=True, help_text="Video conferencing system available (e.g., Zoom, Teams, custom)")
+    
     description = models.TextField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True) 
     updated = models.DateTimeField(auto_now=True)  
@@ -127,3 +134,13 @@ class Reservation(models.Model):
         emails = [email.strip() for email in self.participants_emails.split(',')]
         print(f"Extracted {len(emails)} email(s): {emails}")
         return emails
+    
+class EquipmentRequest(models.Model):
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE)
+    need_projector = models.BooleanField(default=False)
+    need_whiteboard = models.BooleanField(default=False)
+    need_video_conference = models.BooleanField(default=False)
+    special_requirements = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"Equipment for {self.reservation.title}"

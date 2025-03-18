@@ -10,13 +10,22 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.mail import send_mail
 from django.conf import settings
 from datetime import datetime, date, timedelta
-from .models import Room, Reservation
-from .forms import RoomForm, UserCreateForm, ReservationForm
+from .models import Room, Reservation , EquipmentRequest
+from .forms import RoomForm, UserCreateForm, ReservationForm 
 from django.db import models
 
 def home(request):
     # Query all rooms
     rooms = Room.objects.all()
+
+    # Filters by amenities if requested 
+    if request.GET.get('has_projector'):
+        rooms = rooms.filter(has_projector=True)
+    if request.GET.get('has_whiteboard'):
+        rooms = rooms.filter(has_whiteboard=True)
+    if request.GET.get('has_video_conference'):
+        rooms = rooms.filter(has_video_conference=True)
+
     
     # Add current status to each room
     for room in rooms:
@@ -152,7 +161,6 @@ def create_reservation(request, room_id):
             if not room.is_available(date, start_time, end_time):
                 messages.error(request, 'The selected time slot is not available. Please choose another time.')
                 return render(request, 'base/reservation_form.html', {'form': form, 'room': room})
-                
             # Form is valid, check room capacity
             participant_count = form.cleaned_data.get('participant_count')
             
@@ -181,6 +189,17 @@ def create_reservation(request, room_id):
             
             # Save the reservation to the database
             reservation.save()
+
+            # Create equipment request
+            equipment_request = EquipmentRequest(
+                reservation=reservation,
+                need_projector=form.cleaned_data.get('need_projector', False),
+                need_whiteboard=form.cleaned_data.get('need_whiteboard', False),
+                need_video_conference=form.cleaned_data.get('need_video_conference', False),
+                special_requirements=form.cleaned_data.get('special_requirements', '')
+            )
+            equipment_request.save()
+
             print("========= SENDING MEETING CREATION NOTIFICATION =========")
             print(f"Reservation created: {reservation.id} - {reservation.title}")
             participants = reservation.get_participant_list()

@@ -60,7 +60,7 @@ class Room(models.Model):
         # Define business hours (8 AM to 6 PM, 1-hour slots)
         business_hours = [(datetime.strptime(f"{i}:00", "%H:%M").time(), 
                           datetime.strptime(f"{i+1}:00", "%H:%M").time()) 
-                          for i in range(8, 18)]
+                          for i in range(6, 22)]
         
         # Get all reservations for this room on the given date
         reservations = self.reservation_set.filter(date=date)

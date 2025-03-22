@@ -14,6 +14,7 @@ from .models import Room, Reservation
 from .forms import RoomForm, UserCreateForm, ReservationForm
 from django.db import models
 
+
 def home(request):
     # Query all rooms
     rooms = Room.objects.all()
@@ -508,5 +509,27 @@ def register_page(request):
 def about(request):
     return render(request, 'base/about.html')
 
+@login_required
+def join_meet(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
 
+    current_status = room.get_current_status()
+    if current_status['status'] != 'occupied':
+        messages.error(request, 'This room is not currently in use.')
+        return redirect('room-detail', pk=room.id)
+    
+    active_reservation = current_status['reservation']
+    user_email = request.user.email
+    participant_emails = active_reservation.get_participant_list()
+
+    if request.user == active_reservation.user or user_email in participant_emails:
+        context = {
+            'room': room,
+            'reservation': active_reservation,
+            'welcome_message': 'Welcome to the meeting',
+        }
+        return render(request, 'base/meeting_room.html', context)
+    else:
+        messages.error(request, 'You are not authorized to join this meeting.')
+        return redirect('room-detail', pk=room.id)
 # End !

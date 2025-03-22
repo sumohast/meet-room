@@ -20,9 +20,14 @@ urlpatterns = [
     path('delete-room/<str:pk>/', views.delete_room, name="delete-room"),
     path('about' , views.about, name="about"),
     
+    
     # Authentication
     path('login/', views.login_page, name="login"),
     path('logout/', views.logout_user, name="logout"),
     path('register/', views.register_page, name="register"),
     # Removed the quick-reserve URL pattern
+
+    # join meet 
+    path('join-meet/<str:room_id>/', views.join_meet, name="join-meet"),
+    
 ]

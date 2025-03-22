@@ -1,0 +1,37 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header">
+            <h3>{{ reservation.title }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-success">
+                {{ welcome_message }}
+            </div>
+            
+            <h4>Info meet</h4>
+            <p><strong>meet:</strong> {{ room.name }}</p>
+            <p><strong>time:</strong> {{ reservation.start_time }} تا {{ reservation.end_time }}</p>
+            <p><strong>Explains:</strong> {{ reservation.description }}</p>
+            
+            Hello welcome to the meeting room reservation system. Here you can see the details of your reservation.
+            <div class="mt-4">
+                <h5>users</h5>
+                <ul>
+                    <li>{{ reservation.user.username }} (admin)</li>
+                    {% for email in reservation.get_participant_list %}
+                        
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'room-detail' room.id %}" class="btn btn-secondary">
+                Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

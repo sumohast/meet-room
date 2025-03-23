@@ -31,15 +31,17 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'base.apps.BaseConfig' , 
-    'django.contrib.humanize' ,
-    'django.contrib.sites' ,
+    'base.apps.BaseConfig',
+    'django.contrib.humanize',
+    'django.contrib.sites',
+    'channels',
     
     
 ]
@@ -142,3 +144,14 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'sumohast@gmail.com'  # ایمیل شما
 EMAIL_HOST_PASSWORD = 'jpne cswd ghhy ryub'  # رمز عبور ایمیل یا App Password
 DEFAULT_FROM_EMAIL = 'sumohast@gmail.com'  # ایمیل فرستنده
+
+ASGI_APPLICATION = 'myproject.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}

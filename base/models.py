@@ -127,3 +127,13 @@ class Reservation(models.Model):
         emails = [email.strip() for email in self.participants_emails.split(',')]
         print(f"Extracted {len(emails)} email(s): {emails}")
         return emails
+
+
+class WhiteboardData(models.Model):
+    reservation = models.ForeignKey('Reservation', on_delete=models.CASCADE)
+    data = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-timestamp']
+

@@ -1,0 +1,47 @@
+.whiteboard-toolbar {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.whiteboard-toolbar button {
+    margin-right: 8px;
+}
+
+.whiteboard-toolbar input[type="color"] {
+    width: 40px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    vertical-align: middle;
+}
+
+.whiteboard-toolbar input[type="range"] {
+    width: 100px;
+    vertical-align: middle;
+}
+
+#whiteboard {
+    background: #ffffff;
+    border-radius: 5px;
+    cursor: crosshair;
+}
+
+.screen-share-controls {
+    margin-bottom: 15px;
+}
+
+#screenShareVideo {
+    max-height: 70vh;
+    background: #000;
+    border-radius: 5px;
+}
+
+.participants-list li {
+    margin-bottom: 8px;
+}
+
+.participants-list i {
+    margin-right: 5px;
+}

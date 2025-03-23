@@ -29,5 +29,7 @@ urlpatterns = [
 
     # join meet 
     path('join-meet/<str:room_id>/', views.join_meet, name="join-meet"),
-    
+
+    path('meeting-room/<int:reservation_id>/', views.meeting_room, name="meeting-room"),
+    path('api/whiteboard-update/', views.whiteboard_update, name="whiteboard-update"),
 ]

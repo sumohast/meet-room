@@ -13,6 +13,8 @@ from datetime import datetime, date, timedelta
 from .models import Room, Reservation
 from .forms import RoomForm, UserCreateForm, ReservationForm
 from django.db import models
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 def home(request):
@@ -532,4 +534,29 @@ def join_meet(request, room_id):
     else:
         messages.error(request, 'You are not authorized to join this meeting.')
         return redirect('room-detail', pk=room.id)
+
+
+async def meeting_room(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    room = reservation.room
+    
+    context = {
+        'reservation': reservation,
+        'room': room,
+        'welcome_message': f'Welcome to {room.name}'
+    }
+    return render(request, 'base/meeting_room.html', context)
+
+async def whiteboard_update(request):
+    if request.method == "POST":
+        channel_layer = get_channel_layer()
+        await channel_layer.group_send(
+            f"whiteboard_{request.POST.get('room_id')}", 
+            {
+                "type": "whiteboard.update",
+                "data": request.POST.get('data')
+            }
+        )
+        return JsonResponse({"status": "success"})
+    return JsonResponse({"status": "error"}, status=400)
 # End !

@@ -1,37 +1,92 @@
 {% extends 'main.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="card">
-        <div class="card-header">
-            <h3>{{ reservation.title }}</h3>
-        </div>
-        <div class="card-body">
-            <div class="alert alert-success">
-                {{ welcome_message }}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Meeting Info Panel -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ reservation.title }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        {{ welcome_message }}
+                    </div>
+                    <h4>Meeting Info</h4>
+                    <p><strong>Room:</strong> {{ room.name }}</p>
+                    <p><strong>Time:</strong> {{ reservation.start_time }} to {{ reservation.end_time }}</p>
+                    <p><strong>Description:</strong> {{ reservation.description }}</p>
+                    
+                    <div class="mt-4">
+                        <h5>Users</h5>
+                        <ul class="list-unstyled" id="participantsList">
+                            <li><i class="fas fa-user-circle"></i> {{ reservation.user.username }} (host)</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            
-            <h4>Info meet</h4>
-            <p><strong>meet:</strong> {{ room.name }}</p>
-            <p><strong>time:</strong> {{ reservation.start_time }} تا {{ reservation.end_time }}</p>
-            <p><strong>Explains:</strong> {{ reservation.description }}</p>
-            
-            Hello welcome to the meeting room reservation system. Here you can see the details of your reservation.
-            <div class="mt-4">
-                <h5>users</h5>
-                <ul>
-                    <li>{{ reservation.user.username }} (admin)</li>
-                    {% for email in reservation.get_participant_list %}
-                        
-                    {% endfor %}
-                </ul>
-            </div>
         </div>
-        <div class="card-footer">
-            <a href="{% url 'room-detail' room.id %}" class="btn btn-secondary">
-                Home
-            </a>
+
+        <!-- Main Content Area -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-toggle="tab" href="#whiteboard">Whiteboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#screenshare">Screen Share</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <!-- Whiteboard Tab -->
+                        <div class="tab-pane fade show active" id="whiteboard">
+                            <div class="whiteboard-toolbar mb-2">
+                                <button class="btn btn-sm btn-primary" id="pencilTool">
+                                    <i class="fas fa-pencil-alt"></i> Pencil
+                                </button>
+                                <button class="btn btn-sm btn-secondary" id="eraserTool">
+                                    <i class="fas fa-eraser"></i> Eraser
+                                </button>
+                                <input type="color" id="colorPicker" class="ml-2">
+                                <input type="range" id="brushSize" min="1" max="20" value="5" class="ml-2">
+                                <button class="btn btn-sm btn-danger" id="clearBoard">
+                                    <i class="fas fa-trash"></i> Clear
+                                </button>
+                                <button class="btn btn-sm btn-success" id="saveBoard">
+                                    <i class="fas fa-save"></i> Save
+                                </button>
+                            </div>
+                            <canvas id="whiteboard" style="border:1px solid #ddd;"></canvas>
+                        </div>
+
+                        <!-- Screen Share Tab -->
+                        <div class="tab-pane fade" id="screenshare">
+                            <div class="screen-share-controls mb-2">
+                                <button class="btn btn-primary" id="startShare">
+                                    <i class="fas fa-desktop"></i> Start Sharing
+                                </button>
+                                <button class="btn btn-danger" id="stopShare" style="display:none;">
+                                    <i class="fas fa-stop"></i> Stop Sharing
+                                </button>
+                            </div>
+                            <video id="screenShareVideo" autoplay playsinline style="width:100%;display:none;"></video>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/whiteboard.js' %}"></script>
+<script src="{% static 'js/screenshare.js' %}"></script>
 {% endblock %}

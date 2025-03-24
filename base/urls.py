@@ -25,11 +25,16 @@ urlpatterns = [
     path('login/', views.login_page, name="login"),
     path('logout/', views.logout_user, name="logout"),
     path('register/', views.register_page, name="register"),
+    
+    path('profile/', views.profile, name="profile"),
+    path('profile/edit/' , views.edit_profile, name="edit-profile"),
+    path('forgot-password/', views.forgot_password, name="forgot-password"),
+    path('reset-password/<str:uidb64>/<str:token>/', views.reset_password, name="reset-password"),
+   
+
     # Removed the quick-reserve URL pattern
 
-    # join meet 
     path('join-meet/<str:room_id>/', views.join_meet, name="join-meet"),
-
     path('meeting-room/<int:reservation_id>/', views.meeting_room, name="meeting-room"),
     path('api/whiteboard-update/', views.whiteboard_update, name="whiteboard-update"),
 ]

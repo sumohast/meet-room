@@ -10,11 +10,20 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.core.mail import send_mail
 from django.conf import settings
 from datetime import datetime, date, timedelta
-from .models import Room, Reservation
+from .models import Room, Reservation, ChatMessage
 from .forms import RoomForm, UserCreateForm, ReservationForm
 from django.db import models
 from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+from asgiref.sync import async_to_sync, sync_to_async
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.contrib.sites.shortcuts import get_current_site
+import json
+from django.utils.safestring import mark_safe
+from django.core.serializers.json import DjangoJSONEncoder
+import logging
+logger = logging.getLogger(__name__)
 
 
 def home(request):
@@ -519,7 +528,7 @@ def join_meet(request, room_id):
     if current_status['status'] != 'occupied':
         messages.error(request, 'This room is not currently in use.')
         return redirect('room-detail', pk=room.id)
-    
+
     active_reservation = current_status['reservation']
     user_email = request.user.email
     participant_emails = active_reservation.get_participant_list()
@@ -535,16 +544,34 @@ def join_meet(request, room_id):
         messages.error(request, 'You are not authorized to join this meeting.')
         return redirect('room-detail', pk=room.id)
 
-
-async def meeting_room(request, reservation_id):
+@login_required
+def meeting_room(request, reservation_id):
     reservation = get_object_or_404(Reservation, id=reservation_id)
-    room = reservation.room
-    
+
+    # بررسی دسترسی کاربر
+    if request.user != reservation.user:
+        messages.error(request, "You don't have permission to access this meeting room.")
+        return redirect('home')
+
+    # دریافت پیام‌های قبلی
+    chat_messages = ChatMessage.objects.filter(reservation=reservation).select_related('user').order_by('timestamp')
+
+    print(chat_messages)
+
+    messages_list = []
+    for msg in chat_messages:
+        messages_list.append({
+            'message': msg.message,
+            'username': msg.user.username,
+            'userId': str(msg.user.id),  # تبدیل به string برای مقایسه در JS
+            'timestamp': msg.timestamp.isoformat()
+        })
+    print(messages_list)
     context = {
         'reservation': reservation,
-        'room': room,
-        'welcome_message': f'Welcome to {room.name}'
+        'chat_messages_json': json.dumps(messages_list, cls=DjangoJSONEncoder)
     }
+    print('chat messages:', chat_messages)
     return render(request, 'base/meeting_room.html', context)
 
 async def whiteboard_update(request):
@@ -559,4 +586,140 @@ async def whiteboard_update(request):
         )
         return JsonResponse({"status": "success"})
     return JsonResponse({"status": "error"}, status=400)
+
+@login_required
+def profile(request):
+    user = request.user
+    
+    # Get user's reservations
+    upcoming_reservations = Reservation.objects.filter(
+        user=user,
+        date__gte=datetime.now().date()
+    ).order_by('date', 'start_time')[:5]
+    
+    past_reservations = Reservation.objects.filter(
+        user=user,
+        date__lt=datetime.now().date()
+    ).order_by('-date', 'start_time')[:5]
+    
+    # Count total reservations
+    total_reservations = Reservation.objects.filter(user=user).count()
+    
+    context = {
+        'user': user,
+        'upcoming_reservations': upcoming_reservations,
+        'past_reservations': past_reservations,
+        'total_reservations': total_reservations,
+    }
+    
+    return render(request, 'base/profile.html', context)
+
+@login_required
+def edit_profile(request): # this function edit the user profile
+    user = request.user
+    
+    if request.method == 'POST':
+        # Get form data
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        email = request.POST.get('email')
+        
+        # Update user information
+        user.first_name = first_name
+        user.last_name = last_name
+        user.email = email
+        user.save()
+        
+        messages.success(request, 'Your profile has been updated successfully!')
+        return redirect('profile')
+    
+    context = {
+        'user': user
+    }
+    
+    return render(request, 'base/edit_profile.html', context)
+
+def forgot_password(request): # this function send the password reset link to the user email
+    """Handle password reset requests"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        
+        # Check if user with this email exists
+        try:
+            user = User.objects.get(email=email)
+            
+            # Generate password reset token
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            
+            # Build reset URL
+            current_site = get_current_site(request)
+            reset_url = f"http://localhost:8000/reset-password/{uid}/{token}/"
+            
+            # Send email with reset link
+            subject = "Password Reset Request"
+            message = f"""
+            Hello {user.username},
+            
+            You requested a password reset for your account. Please click the link below to reset your password:
+            
+            {reset_url}
+            
+            If you didn't request this, you can safely ignore this email.
+            
+            Thank you,
+            The Team
+            """
+            
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            
+            messages.success(request, 'Password reset instructions have been sent to your email.')
+            return redirect('login')
+            
+        except User.DoesNotExist:
+            messages.error(request, 'No user found with that email address.')
+    
+    return render(request, 'base/forgot_password.html')
+
+def reset_password(request, uidb64, token): # this function confirm the password reset
+    """Handle password reset confirmation"""
+    try:
+        # Decode the user id
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+        
+        # Check if the token is valid
+        if default_token_generator.check_token(user, token):
+            if request.method == 'POST':
+                # Get new password
+                password1 = request.POST.get('password1')
+                password2 = request.POST.get('password2')
+                
+                # Validate passwords
+                if password1 != password2:
+                    messages.error(request, 'Passwords do not match.')
+                elif len(password1) < 8:
+                    messages.error(request, 'Password must be at least 8 characters long.')
+                else:
+                    # Set new password
+                    user.set_password(password1)
+                    user.save()
+                    messages.success(request, 'Your password has been reset successfully. You can now log in with your new password.')
+                    return redirect('login')
+            
+            return render(request, 'base/reset_password.html')
+        else:
+            messages.error(request, 'The password reset link is invalid or has expired.')
+            return redirect('forgot-password')
+            
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        messages.error(request, 'The password reset link is invalid or has expired.')
+        return redirect('forgot-password')
+
 # End !

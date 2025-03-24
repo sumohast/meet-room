@@ -1,81 +1,275 @@
 {% extends 'main.html' %}
 {% load static %}
 
+{% block title %}Meeting Room - {{ reservation.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* استایل‌های کلی */
+    .meeting-container {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+    
+    .meeting-header {
+        background: linear-gradient(135deg, #4a6bff 0%, #2541b2 100%);
+        color: white;
+        padding: 20px;
+        position: relative;
+    }
+    
+    .meeting-title {
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .meeting-info {
+        opacity: 0.9;
+        font-size: 0.9rem;
+    }
+    
+    .meeting-actions {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+    }
+    
+    /* استایل چت */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 500px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        font-weight: 600;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background-color: #fff;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        max-width: 80%;
+        position: relative;
+    }
+    
+    .message-mine {
+        margin-left: auto;
+        background-color: #e3f2fd;
+        border-radius: 18px 18px 0 18px;
+        padding: 12px 15px;
+        color: #0d47a1;
+    }
+    
+    .message-others {
+        margin-right: auto;
+        background-color: #f5f5f5;
+        border-radius: 18px 18px 18px 0;
+        padding: 12px 15px;
+        color: #333;
+    }
+    
+    .message-sender {
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 4px;
+    }
+    
+    .message-time {
+        font-size: 0.7rem;
+        color: #6c757d;
+        position: absolute;
+        bottom: -18px;
+        right: 5px;
+    }
+    
+    .message-system {
+        text-align: center;
+        margin: 10px 0;
+        font-size: 0.85rem;
+        color: #6c757d;
+        font-style: italic;
+    }
+    
+    .chat-input-container {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .chat-input {
+        border-radius: 30px;
+        padding-left: 20px;
+        border: 1px solid #ced4da;
+    }
+    
+    .chat-send-btn {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* استایل لیست شرکت‌کنندگان */
+    .participants-container {
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        height: 500px;
+    }
+    
+    .participants-header {
+        padding: 15px;
+        background-color: #4a4b4d;
+        border-bottom: 1px solid #e9ecef;
+        font-weight: 600;
+    }
+    
+    .participants-list {
+        overflow-y: auto;
+        height: calc(100% - 53px);
+    }
+    
+    .participant {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f1f1f1;
+        transition: background-color 0.2s;
+    }
+    
+    .participant:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .participant-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4a6bff 0%, #2541b2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 12px;
+    }
+    
+    .participant-info {
+        flex: 1;
+    }
+    
+    .participant-name {
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+    
+    .participant-status {
+        font-size: 0.75rem;
+        color: #28a745;
+    }
+    
+    .connection-status {
+        transition: all 0.3s;
+        border-radius: 30px;
+        font-size: 0.85rem;
+        padding: 8px 15px;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message {
+        animation: fadeIn 0.3s ease-out;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container my-4">
+    <!-- هدر جلسه -->
+    <div class="meeting-container mb-4">
+        <div class="meeting-header">
+            <h2 class="meeting-title">{{ reservation.title }}</h2>
+            <p class="meeting-info">
+                <i class="far fa-calendar-alt me-2"></i>{{ reservation.date }} 
+                <i class="far fa-clock ms-3 me-2"></i>{{ reservation.start_time }} - {{ reservation.end_time }}
+            </p>
+            <div class="meeting-actions">
+                <button class="btn btn-sm btn-light" id="leave-btn">
+                    <i class="fas fa-sign-out-alt me-1"></i> Leave Meeting
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <div class="row">
-        <!-- Meeting Info Panel -->
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header">
-                    <h3>{{ reservation.title }}</h3>
+        <!-- چت -->
+        <div class="col-lg-8 mb-4">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <i class="fas fa-comments me-2"></i> Group Chat
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-success">
-                        {{ welcome_message }}
+                
+                <div class="chat-messages" id="chat-log">
+                    <!-- پیام‌های چت اینجا نمایش داده می‌شوند -->
+                </div>
+                
+                <div class="chat-input-container">
+                    <div id="connection-status" class="connection-status alert alert-info mb-3">
+                        <i class="fas fa-circle-notch fa-spin me-2"></i> Connecting to chat...
                     </div>
-                    <h4>Meeting Info</h4>
-                    <p><strong>Room:</strong> {{ room.name }}</p>
-                    <p><strong>Time:</strong> {{ reservation.start_time }} to {{ reservation.end_time }}</p>
-                    <p><strong>Description:</strong> {{ reservation.description }}</p>
                     
-                    <div class="mt-4">
-                        <h5>Users</h5>
-                        <ul class="list-unstyled" id="participantsList">
-                            <li><i class="fas fa-user-circle"></i> {{ reservation.user.username }} (host)</li>
-                        </ul>
-                    </div>
+                    <form id="chat-form">
+                        <div class="input-group">
+                            <input type="text" id="chat-message-input" class="form-control chat-input" 
+                                   placeholder="Type a message..." autocomplete="off">
+                            <button type="submit" class="btn btn-primary chat-send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-
-        <!-- Main Content Area -->
-        <div class="col-md-9">
-            <div class="card">
-                <div class="card-header">
-                    <ul class="nav nav-tabs card-header-tabs">
-                        <li class="nav-item">
-                            <a class="nav-link active" data-toggle="tab" href="#whiteboard">Whiteboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-toggle="tab" href="#screenshare">Screen Share</a>
-                        </li>
-                    </ul>
+        
+        <!-- لیست شرکت‌کنندگان -->
+        <div class="col-lg-4 mb-4">
+            <div class="participants-container">
+                <div class="participants-header">
+                    <i class="fas fa-users me-2"></i> users <span id="participant-count" class="badge bg-primary ms-2">1</span>
                 </div>
-                <div class="card-body">
-                    <div class="tab-content">
-                        <!-- Whiteboard Tab -->
-                        <div class="tab-pane fade show active" id="whiteboard">
-                            <div class="whiteboard-toolbar mb-2">
-                                <button class="btn btn-sm btn-primary" id="pencilTool">
-                                    <i class="fas fa-pencil-alt"></i> Pencil
-                                </button>
-                                <button class="btn btn-sm btn-secondary" id="eraserTool">
-                                    <i class="fas fa-eraser"></i> Eraser
-                                </button>
-                                <input type="color" id="colorPicker" class="ml-2">
-                                <input type="range" id="brushSize" min="1" max="20" value="5" class="ml-2">
-                                <button class="btn btn-sm btn-danger" id="clearBoard">
-                                    <i class="fas fa-trash"></i> Clear
-                                </button>
-                                <button class="btn btn-sm btn-success" id="saveBoard">
-                                    <i class="fas fa-save"></i> Save
-                                </button>
-                            </div>
-                            <canvas id="whiteboard" style="border:1px solid #ddd;"></canvas>
+                
+                <div class="participants-list" id="user-list">
+                    <!-- شرکت‌کنندگان اینجا نمایش داده می‌شوند -->
+                    <div class="participant">
+                        <div class="participant-avatar">
+                            {{ request.user.username|slice:":1"|upper }}
                         </div>
-
-                        <!-- Screen Share Tab -->
-                        <div class="tab-pane fade" id="screenshare">
-                            <div class="screen-share-controls mb-2">
-                                <button class="btn btn-primary" id="startShare">
-                                    <i class="fas fa-desktop"></i> Start Sharing
-                                </button>
-                                <button class="btn btn-danger" id="stopShare" style="display:none;">
-                                    <i class="fas fa-stop"></i> Stop Sharing
-                                </button>
-                            </div>
-                            <video id="screenShareVideo" autoplay playsinline style="width:100%;display:none;"></video>
+                        <div class="participant-info">
+                            <div class="participant-name">{{ request.user.username }} (You)</div>
+                            <div class="participant-status">Online</div>
                         </div>
                     </div>
                 </div>
@@ -83,10 +277,240 @@
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/whiteboard.js' %}"></script>
-<script src="{% static 'js/screenshare.js' %}"></script>
+<script>
+    const reservationId = "{{ reservation.id }}";
+    const username = "{{ request.user.username }}";
+    const userId = "{{ request.user.id }}";
+    const participants = new Map();
+    
+    // اضافه کردن خود کاربر به لیست شرکت‌کنندگان
+    participants.set(userId, username);
+    
+    // اتصال به WebSocket
+    const chatSocket = new WebSocket(
+        (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
+        window.location.host + 
+        '/ws/chat/' + reservationId + '/'
+    );
+    
+    const chatLog = document.getElementById('chat-log');
+    const chatMessageInput = document.getElementById('chat-message-input');
+    const chatForm = document.getElementById('chat-form');
+    const connectionStatus = document.getElementById('connection-status');
+    const userList = document.getElementById('user-list');
+    const participantCount = document.getElementById('participant-count');
+    const leaveBtn = document.getElementById('leave-btn');
+    
+    // نمایش پیام در چت
+    function displayMessage(message, sender, isCurrentUser = false, timestamp = new Date()) {
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${isCurrentUser ? 'message-mine' : 'message-others'}`;
+        
+        let messageContent = '';
+        
+        if (!isCurrentUser) {
+            messageContent += `<div class="message-sender">${sender}</div>`;
+        }
+        
+        messageContent += `
+            <div class="message-content">${message}</div>
+            <div class="message-time">${formatTime(timestamp)}</div>
+        `;
+        
+        messageElement.innerHTML = messageContent;
+        chatLog.appendChild(messageElement);
+        scrollToBottom();
+    }
+    
+    // نمایش پیام سیستمی
+    function displaySystemMessage(message) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message-system';
+        messageElement.textContent = message;
+        
+        chatLog.appendChild(messageElement);
+        scrollToBottom();
+    }
+    
+    // اسکرول به پایین چت
+    function scrollToBottom() {
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+    
+    // فرمت زمان
+    function formatTime(date) {
+        if (typeof date === 'string') {
+            date = new Date(date);
+        }
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // به‌روزرسانی لیست شرکت‌کنندگان
+    function updateParticipantsList() {
+        userList.innerHTML = '';
+        
+        participants.forEach((username, id) => {
+            const isCurrentUser = id === userId;
+            
+            const participantElement = document.createElement('div');
+            participantElement.className = 'participant';
+            
+            participantElement.innerHTML = `
+                <div class="participant-avatar">
+                    ${username.charAt(0).toUpperCase()}
+                </div>
+                <div class="participant-info">
+                    <div class="participant-name">${username} ${isCurrentUser ? '(You)' : ''}</div>
+                    <div class="participant-status">Online</div>
+                </div>
+            `;
+            
+            userList.appendChild(participantElement);
+        });
+        
+        // به‌روزرسانی شمارنده شرکت‌کنندگان
+        participantCount.textContent = participants.size;
+    }
+    
+    // اضافه کردن شرکت‌کننده
+    function addParticipant(id, name) {
+        if (!participants.has(id)) {
+            participants.set(id, name);
+            updateParticipantsList();
+            displaySystemMessage(`${name} joined the meeting`);
+        }
+    }
+    
+    // حذف شرکت‌کننده
+    function removeParticipant(id) {
+        if (participants.has(id)) {
+            const name = participants.get(id);
+            participants.delete(id);
+            updateParticipantsList();
+            displaySystemMessage(`${name} left the meeting`);
+        }
+    }
+    
+    // رویدادهای WebSocket
+    chatSocket.onopen = function(e) {
+        console.log('WebSocket connection established');
+        connectionStatus.innerHTML = '<i class="fas fa-check-circle me-2"></i> Connected to chat';
+        connectionStatus.classList.remove('alert-info');
+        connectionStatus.classList.add('alert-success');
+        
+        // پنهان کردن نوار وضعیت پس از 3 ثانیه
+        setTimeout(() => {
+            connectionStatus.style.display = 'none';
+        }, 3000);
+    };
+    
+    chatSocket.onmessage = function(e) {
+        console.log('Message received:', e.data);
+        const data = JSON.parse(e.data);
+        
+        if (data.type === 'chat_message') {
+            const isCurrentUser = data.user_id === userId;
+            displayMessage(data.message, data.username, isCurrentUser, data.timestamp);
+            
+            // اضافه کردن کاربر به لیست شرکت‌کنندگان اگر هنوز اضافه نشده است
+            if (!isCurrentUser) {
+                addParticipant(data.user_id, data.username);
+            }
+        } else if (data.type === 'connection_established') {
+            displaySystemMessage(data.message);
+        } else if (data.type === 'user_join') {
+            addParticipant(data.user_id, data.username);
+        } else if (data.type === 'user_leave') {
+            removeParticipant(data.user_id);
+        } else if (data.type === 'error') {
+            displaySystemMessage('Error: ' + data.message);
+            connectionStatus.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Error: ' + data.message;
+            connectionStatus.classList.remove('alert-success', 'alert-info');
+            connectionStatus.classList.add('alert-danger');
+            connectionStatus.style.display = 'block';
+        }
+    };
+    
+    chatSocket.onclose = function(e) {
+        console.log('WebSocket connection closed');
+        connectionStatus.innerHTML = '<i class="fas fa-times-circle me-2"></i> Disconnected from chat';
+        connectionStatus.classList.remove('alert-success', 'alert-info');
+        connectionStatus.classList.add('alert-danger');
+        connectionStatus.style.display = 'block';
+        
+        displaySystemMessage('Disconnected from chat. Refresh the page to reconnect.');
+    };
+    
+    chatSocket.onerror = function(e) {
+        console.error('WebSocket error:', e);
+        connectionStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i> Connection error';
+        connectionStatus.classList.remove('alert-success', 'alert-info');
+        connectionStatus.classList.add('alert-danger');
+        connectionStatus.style.display = 'block';
+        
+        displaySystemMessage('Connection error occurred');
+    };
+    
+    // ارسال پیام
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const message = chatMessageInput.value.trim();
+        if (message) {
+            // ارسال پیام به سرور
+            chatSocket.send(JSON.stringify({
+                'message': message
+            }));
+            
+            chatMessageInput.value = '';
+            chatMessageInput.focus();
+        }
+    });
+    
+   
+    leaveBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to leave this meeting?')) {
+            window.location.href = '/';
+        }
+    });
+    
+    chatMessageInput.focus();
+
+    
+    // Load Previous Messages
+
+    (function loadPreviousMessages() {
+        const previousMessagesJson = '{{ chat_messages_json|escapejs }}';
+        let previousMessages = [];
+        
+        try {
+            if (previousMessagesJson) {
+                previousMessages = JSON.parse(previousMessagesJson);
+            }
+        } catch (e) {
+            console.error('Error parsing previous messages:', e);
+        }
+        
+        if (previousMessages.length > 0) {
+            console.log('Loading previous messages:', previousMessages); 
+            previousMessages.forEach(msg => {
+                displayMessage(
+                    msg.message,
+                    msg.username,
+                    msg.userId === userId,
+                    msg.timestamp
+                );
+            });
+            
+        } else {
+            displaySystemMessage("No previous messages in this meeting room.");
+        }
+    })();
+    
+    // Update participants list
+    updateParticipantsList();
+</script>
 {% endblock %}

@@ -544,36 +544,69 @@ def join_meet(request, room_id):
         messages.error(request, 'You are not authorized to join this meeting.')
         return redirect('room-detail', pk=room.id)
 
+
 @login_required
-def meeting_room(request, reservation_id):
-    reservation = get_object_or_404(Reservation, id=reservation_id)
+async def meeting_room(request, reservation_id):
+    try : 
+        reservation = await sync_to_async(get_object_or_404)(Reservation, id=reservation_id)
+        user_email = request.user.email
+        participant_emails = await sync_to_async(reservation.get_participant_list)()
 
-    # بررسی دسترسی کاربر
-    if request.user != reservation.user:
-        messages.error(request, "You don't have permission to access this meeting room.")
-        return redirect('home')
+        # Check user authorization
+        if request.user != reservation.user and user_email not in participant_emails:
+            messages.error(request, "You don't have permission to access this meeting room.")
+            return redirect('home')
 
-    # دریافت پیام‌های قبلی
-    chat_messages = ChatMessage.objects.filter(reservation=reservation).select_related('user').order_by('timestamp')
+        # Get previous chat messages with user info
+        chat_messages = await sync_to_async(list)(
+            ChatMessage.objects.filter(reservation=reservation)
+            .select_related('user')
+            .order_by('timestamp')
+        )
 
-    print(chat_messages)
-
-    messages_list = []
-    for msg in chat_messages:
-        messages_list.append({
+        messages_list = [{
             'message': msg.message,
             'username': msg.user.username,
-            'userId': str(msg.user.id),  # تبدیل به string برای مقایسه در JS
+            'userId': str(msg.user.id),
             'timestamp': msg.timestamp.isoformat()
-        })
-    print(messages_list)
-    context = {
-        'reservation': reservation,
-        'chat_messages_json': json.dumps(messages_list, cls=DjangoJSONEncoder)
-    }
-    print('chat messages:', chat_messages)
-    return render(request, 'base/meeting_room.html', context)
+        } for msg in chat_messages]
 
+        # Get current participants
+        participants_list = [{
+            'userId': str(reservation.user.id),
+            'username': reservation.user.username,
+        }]
+
+        if participant_emails:
+            participant_users = await sync_to_async(list)(
+                User.objects.filter(email__in=participant_emails)
+            )
+            participants_list.extend([{
+                'userId': str(user.id),
+                'username': user.username,
+            } for user in participant_users])
+
+        context = {
+            'reservation': reservation,
+            'chat_messages_json': json.dumps([{
+                'message': msg.message,
+                'username': msg.user.username,
+                'userId': str(msg.user.id),
+                'timestamp': msg.timestamp.isoformat()
+            } for msg in chat_messages], cls=DjangoJSONEncoder),
+            'participants_json': json.dumps(participants_list),
+            'current_user': {
+                'id': str(request.user.id),
+                'username': request.user.username
+            }
+        }
+
+        return render(request, 'base/meeting_room.html', context)
+    except Exception as e:
+        logger.error(f"Error in meeting_room: {str(e)}")
+        messages.error(request, 'There was an error accessing this meeting room.')
+        return redirect('home')
+    
 async def whiteboard_update(request):
     if request.method == "POST":
         channel_layer = get_channel_layer()

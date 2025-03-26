@@ -284,18 +284,12 @@
     const reservationId = "{{ reservation.id }}";
     const username = "{{ request.user.username }}";
     const userId = "{{ request.user.id }}";
-    const participants = new Map();
     
-    // اضافه کردن خود کاربر به لیست شرکت‌کنندگان
+    // Participants tracking
+    const participants = new Map();
     participants.set(userId, username);
     
-    // اتصال به WebSocket
-    const chatSocket = new WebSocket(
-        (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + 
-        window.location.host + 
-        '/ws/chat/' + reservationId + '/'
-    );
-    
+    // DOM Elements
     const chatLog = document.getElementById('chat-log');
     const chatMessageInput = document.getElementById('chat-message-input');
     const chatForm = document.getElementById('chat-form');
@@ -303,8 +297,101 @@
     const userList = document.getElementById('user-list');
     const participantCount = document.getElementById('participant-count');
     const leaveBtn = document.getElementById('leave-btn');
-    
-    // نمایش پیام در چت
+
+    let chatSocket = null;
+
+    function initializeWebSocket() {
+        // Determine protocol based on current page
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const socketUrl = `${protocol}${window.location.host}/ws/chat/${reservationId}/`;
+
+        try {
+            chatSocket = new WebSocket(socketUrl);
+
+            chatSocket.onopen = function(e) {
+                console.log('WebSocket connection established');
+                connectionStatus.innerHTML = '<i class="fas fa-check-circle me-2"></i> Connected to chat';
+                connectionStatus.classList.remove('alert-info');
+                connectionStatus.classList.add('alert-success');
+                
+                // Hide status after 3 seconds
+                setTimeout(() => {
+                    connectionStatus.style.display = 'none';
+                }, 3000);
+            };
+
+            chatSocket.onmessage = handleWebSocketMessage;
+            chatSocket.onclose = handleWebSocketClose;
+            chatSocket.onerror = handleWebSocketError;
+
+        } catch (error) {
+            console.error('WebSocket initialization error:', error);
+            displaySystemMessage('Failed to establish WebSocket connection');
+        }
+    }
+
+    function handleWebSocketMessage(e) {
+        console.log('Message received:', e.data);
+        const data = JSON.parse(e.data);
+        
+        switch(data.type) {
+            case 'chat_message':
+                const isCurrentUser = data.user_id === userId;
+                displayMessage(
+                    data.message, 
+                    data.username, 
+                    isCurrentUser, 
+                    new Date(data.timestamp)
+                );
+                break;
+            
+            case 'fetch_messages':
+                // Handle loading previous messages
+                data.messages.forEach(msg => {
+                    displayMessage(
+                        msg.message, 
+                        msg.username, 
+                        msg.userId === userId, 
+                        new Date(msg.timestamp)
+                    );
+                });
+                break;
+            
+            case 'user_join':
+                addParticipant(data.user_id, data.username);
+                break;
+            
+            case 'user_leave':
+                removeParticipant(data.user_id);
+                break;
+            
+            case 'error':
+                displaySystemMessage('Error: ' + data.message);
+                break;
+        }
+    }
+
+    function handleWebSocketClose(e) {
+        console.log('WebSocket connection closed');
+        connectionStatus.innerHTML = '<i class="fas fa-times-circle me-2"></i> Disconnected from chat';
+        connectionStatus.classList.remove('alert-success', 'alert-info');
+        connectionStatus.classList.add('alert-danger');
+        connectionStatus.style.display = 'block';
+        
+        displaySystemMessage('Disconnected from chat. Refresh the page to reconnect.');
+    }
+
+    function handleWebSocketError(e) {
+        console.error('WebSocket error:', e);
+        connectionStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i> Connection error';
+        connectionStatus.classList.remove('alert-success', 'alert-info');
+        connectionStatus.classList.add('alert-danger');
+        connectionStatus.style.display = 'block';
+        
+        displaySystemMessage('Connection error occurred');
+    }
+
+    // Display message in chat log
     function displayMessage(message, sender, isCurrentUser = false, timestamp = new Date()) {
         const messageElement = document.createElement('div');
         messageElement.className = `message ${isCurrentUser ? 'message-mine' : 'message-others'}`;
@@ -324,8 +411,8 @@
         chatLog.appendChild(messageElement);
         scrollToBottom();
     }
-    
-    // نمایش پیام سیستمی
+
+    // Display system message
     function displaySystemMessage(message) {
         const messageElement = document.createElement('div');
         messageElement.className = 'message-system';
@@ -334,21 +421,21 @@
         chatLog.appendChild(messageElement);
         scrollToBottom();
     }
-    
-    // اسکرول به پایین چت
+
+    // Scroll chat to bottom
     function scrollToBottom() {
         chatLog.scrollTop = chatLog.scrollHeight;
     }
-    
-    // فرمت زمان
+
+    // Format timestamp
     function formatTime(date) {
         if (typeof date === 'string') {
             date = new Date(date);
         }
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
-    
-    // به‌روزرسانی لیست شرکت‌کنندگان
+
+    // Update participants list
     function updateParticipantsList() {
         userList.innerHTML = '';
         
@@ -371,11 +458,11 @@
             userList.appendChild(participantElement);
         });
         
-        // به‌روزرسانی شمارنده شرکت‌کنندگان
+        // Update participant count
         participantCount.textContent = participants.size;
     }
-    
-    // اضافه کردن شرکت‌کننده
+
+    // Add participant
     function addParticipant(id, name) {
         if (!participants.has(id)) {
             participants.set(id, name);
@@ -383,8 +470,8 @@
             displaySystemMessage(`${name} joined the meeting`);
         }
     }
-    
-    // حذف شرکت‌کننده
+
+    // Remove participant
     function removeParticipant(id) {
         if (participants.has(id)) {
             const name = participants.get(id);
@@ -393,74 +480,14 @@
             displaySystemMessage(`${name} left the meeting`);
         }
     }
-    
-    // رویدادهای WebSocket
-    chatSocket.onopen = function(e) {
-        console.log('WebSocket connection established');
-        connectionStatus.innerHTML = '<i class="fas fa-check-circle me-2"></i> Connected to chat';
-        connectionStatus.classList.remove('alert-info');
-        connectionStatus.classList.add('alert-success');
-        
-        // پنهان کردن نوار وضعیت پس از 3 ثانیه
-        setTimeout(() => {
-            connectionStatus.style.display = 'none';
-        }, 3000);
-    };
-    
-    chatSocket.onmessage = function(e) {
-        console.log('Message received:', e.data);
-        const data = JSON.parse(e.data);
-        
-        if (data.type === 'chat_message') {
-            const isCurrentUser = data.user_id === userId;
-            displayMessage(data.message, data.username, isCurrentUser, data.timestamp);
-            
-            // اضافه کردن کاربر به لیست شرکت‌کنندگان اگر هنوز اضافه نشده است
-            if (!isCurrentUser) {
-                addParticipant(data.user_id, data.username);
-            }
-        } else if (data.type === 'connection_established') {
-            displaySystemMessage(data.message);
-        } else if (data.type === 'user_join') {
-            addParticipant(data.user_id, data.username);
-        } else if (data.type === 'user_leave') {
-            removeParticipant(data.user_id);
-        } else if (data.type === 'error') {
-            displaySystemMessage('Error: ' + data.message);
-            connectionStatus.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> Error: ' + data.message;
-            connectionStatus.classList.remove('alert-success', 'alert-info');
-            connectionStatus.classList.add('alert-danger');
-            connectionStatus.style.display = 'block';
-        }
-    };
-    
-    chatSocket.onclose = function(e) {
-        console.log('WebSocket connection closed');
-        connectionStatus.innerHTML = '<i class="fas fa-times-circle me-2"></i> Disconnected from chat';
-        connectionStatus.classList.remove('alert-success', 'alert-info');
-        connectionStatus.classList.add('alert-danger');
-        connectionStatus.style.display = 'block';
-        
-        displaySystemMessage('Disconnected from chat. Refresh the page to reconnect.');
-    };
-    
-    chatSocket.onerror = function(e) {
-        console.error('WebSocket error:', e);
-        connectionStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i> Connection error';
-        connectionStatus.classList.remove('alert-success', 'alert-info');
-        connectionStatus.classList.add('alert-danger');
-        connectionStatus.style.display = 'block';
-        
-        displaySystemMessage('Connection error occurred');
-    };
-    
-    // ارسال پیام
+
+    // Send message form submission
     chatForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const message = chatMessageInput.value.trim();
-        if (message) {
-            // ارسال پیام به سرور
+        if (message && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            // Send message to server
             chatSocket.send(JSON.stringify({
                 'message': message
             }));
@@ -469,48 +496,16 @@
             chatMessageInput.focus();
         }
     });
-    
-   
+
+    // Leave meeting button
     leaveBtn.addEventListener('click', function() {
         if (confirm('Are you sure you want to leave this meeting?')) {
             window.location.href = '/';
         }
     });
-    
-    chatMessageInput.focus();
 
-    
-    // Load Previous Messages
-
-    (function loadPreviousMessages() {
-        const previousMessagesJson = '{{ chat_messages_json|escapejs }}';
-        let previousMessages = [];
-        
-        try {
-            if (previousMessagesJson) {
-                previousMessages = JSON.parse(previousMessagesJson);
-            }
-        } catch (e) {
-            console.error('Error parsing previous messages:', e);
-        }
-        
-        if (previousMessages.length > 0) {
-            console.log('Loading previous messages:', previousMessages); 
-            previousMessages.forEach(msg => {
-                displayMessage(
-                    msg.message,
-                    msg.username,
-                    msg.userId === userId,
-                    msg.timestamp
-                );
-            });
-            
-        } else {
-            displaySystemMessage("No previous messages in this meeting room.");
-        }
-    })();
-    
-    // Update participants list
-    updateParticipantsList();
+    // Initialize WebSocket when page loads
+    document.addEventListener('DOMContentLoaded', initializeWebSocket);
 </script>
+
 {% endblock %}

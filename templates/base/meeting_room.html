@@ -5,12 +5,13 @@
 
 {% block extra_css %}
 <style>
-    /* استایل‌های کلی */
+    /* General Styles */
     .meeting-container {
         background-color: #f8f9fa;
         border-radius: 10px;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
         overflow: hidden;
+        margin-bottom: 20px;
     }
     
     .meeting-header {
@@ -36,7 +37,7 @@
         right: 20px;
     }
     
-    /* استایل چت */
+    /* Chat Styles */
     .chat-container {
         display: flex;
         flex-direction: column;
@@ -54,20 +55,26 @@
         font-weight: 600;
     }
     
-    .chat-messages {
+    .chat-messages, .chat-log {
         flex: 1;
         overflow-y: auto;
         padding: 20px;
         background-color: #fff;
+        height: 300px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
     }
     
     .message {
         margin-bottom: 15px;
         max-width: 80%;
         position: relative;
+        padding: 8px;
+        border-radius: 5px;
     }
     
-    .message-mine {
+    .message-mine, .chat-message-own {
         margin-left: auto;
         background-color: #e3f2fd;
         border-radius: 18px 18px 0 18px;
@@ -75,18 +82,30 @@
         color: #0d47a1;
     }
     
-    .message-others {
+    .message-others, .chat-message {
         margin-right: auto;
         background-color: #f5f5f5;
         border-radius: 18px 18px 18px 0;
         padding: 12px 15px;
         color: #333;
+        max-width: 80%;
     }
     
-    .message-sender {
-        font-weight: 600;
+    .chat-message-own {
+        margin-left: auto;
+        background-color: #f1f8e9;
+    }
+    
+    .message-header, .message-sender {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
         font-size: 0.85rem;
-        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    
+    .message-username {
+        font-weight: bold;
     }
     
     .message-time {
@@ -127,7 +146,7 @@
         justify-content: center;
     }
     
-    /* استایل لیست شرکت‌کنندگان */
+    /* Participants Styles */
     .participants-container {
         background-color: white;
         border-radius: 10px;
@@ -141,6 +160,7 @@
         background-color: #4a4b4d;
         border-bottom: 1px solid #e9ecef;
         font-weight: 600;
+        color: white;
     }
     
     .participants-list {
@@ -194,7 +214,57 @@
         padding: 8px 15px;
     }
     
-    /* Animations */
+    /* Video Call Styles */
+    .local-video-container {
+        position: relative;
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    #localVideo {
+        width: 100%;
+        border-radius: 8px;
+        transform: scaleX(-1); /* Mirror effect */
+        background-color: #333;
+        min-height: 150px;
+    }
+    
+    .remote-videos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .remote-video {
+        width: 100%;
+        max-width: 300px;
+        border-radius: 8px;
+        background-color: #333;
+        min-height: 150px;
+    }
+    
+    .video-label {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+    
+    /* Whiteboard Styles */
+    #whiteboard {
+        width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: white;
+        min-height: 300px;
+    }
+    
+    /* Animation */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -208,13 +278,14 @@
 
 {% block content %}
 <div class="container my-4">
-    <!-- هدر جلسه -->
-    <div class="meeting-container mb-4">
+    <!-- Meeting Header -->
+    <div class="meeting-container">
         <div class="meeting-header">
             <h2 class="meeting-title">{{ reservation.title }}</h2>
             <p class="meeting-info">
                 <i class="far fa-calendar-alt me-2"></i>{{ reservation.date }} 
                 <i class="far fa-clock ms-3 me-2"></i>{{ reservation.start_time }} - {{ reservation.end_time }}
+                <i class="far fa-building ms-3 me-2"></i>{{ reservation.room.name }}
             </p>
             <div class="meeting-actions">
                 <button class="btn btn-sm btn-light" id="leave-btn">
@@ -225,15 +296,101 @@
     </div>
     
     <div class="row">
-        <!-- چت -->
+        <!-- Video Call and Whiteboard Column -->
         <div class="col-lg-8 mb-4">
-            <div class="chat-container">
+            <!-- Video Call Section -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-video me-2"></i>Video Call</h5>
+                    <div>
+                        <button id="startCall" class="btn btn-success btn-sm">
+                            <i class="fas fa-phone"></i> Start Video Call
+                        </button>
+                        <button id="endCall" class="btn btn-danger btn-sm" style="display: none;">
+                            <i class="fas fa-phone-slash"></i> End Call
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="videocall-container" 
+                         data-reservation-id="{{ reservation.id }}" 
+                         data-current-user-id="{{ request.user.id }}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="local-video-container">
+                                    <video id="localVideo" autoplay playsinline muted></video>
+                                    <div class="video-label">You</div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div id="remoteVideos" class="remote-videos"></div>
+                            </div>
+                        </div>
+                        <div id="videoCallControls" class="mt-3 d-flex justify-content-center" style="display: none;">
+                            <button id="toggleCamera" class="btn btn-light mx-2">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button id="toggleMic" class="btn btn-light mx-2">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button id="startShare" class="btn btn-light mx-2">
+                                <i class="fas fa-desktop"></i> Share Screen
+                            </button>
+                            <button id="stopShare" class="btn btn-danger mx-2" style="display: none;">
+                                <i class="fas fa-stop"></i> Stop Sharing
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Screen Share Section -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-desktop me-2"></i>Screen Sharing</h5>
+                </div>
+                <div class="card-body">
+                    <video id="screenShareVideo" style="display: none; width: 100%;" autoplay></video>
+                </div>
+            </div>
+            
+            <!-- Whiteboard Section -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-chalkboard me-2"></i>Whiteboard</h5>
+                    <div>
+                        <button id="pencilTool" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button id="eraserTool" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                        <input type="color" id="colorPicker" value="#000000" class="form-control-sm">
+                        <input type="range" id="brushSize" min="1" max="20" value="5" class="form-control-sm">
+                        <button id="clearBoard" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button id="saveBoard" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <canvas id="whiteboard" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat and Participants Column -->
+        <div class="col-lg-4 mb-4">
+            <!-- Chat Section -->
+            <div class="chat-container mb-4">
                 <div class="chat-header">
                     <i class="fas fa-comments me-2"></i> Group Chat
                 </div>
                 
                 <div class="chat-messages" id="chat-log">
-                    <!-- پیام‌های چت اینجا نمایش داده می‌شوند -->
+                    <!-- Chat messages will be displayed here -->
                 </div>
                 
                 <div class="chat-input-container">
@@ -245,24 +402,22 @@
                         <div class="input-group">
                             <input type="text" id="chat-message-input" class="form-control chat-input" 
                                    placeholder="Type a message..." autocomplete="off">
-                            <button type="submit" class="btn btn-primary chat-send-btn">
+                            <button type="submit" id="chat-message-submit" class="btn btn-primary chat-send-btn">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
-        </div>
-        
-        <!-- لیست شرکت‌کنندگان -->
-        <div class="col-lg-4 mb-4">
+            
+            <!-- Participants Section -->
             <div class="participants-container">
                 <div class="participants-header">
-                    <i class="fas fa-users me-2"></i> users <span id="participant-count" class="badge bg-primary ms-2">1</span>
+                    <i class="fas fa-users me-2"></i> Participants <span id="participant-count" class="badge bg-primary ms-2">1</span>
                 </div>
                 
                 <div class="participants-list" id="user-list">
-                    <!-- شرکت‌کنندگان اینجا نمایش داده می‌شوند -->
+                    <!-- Participants will be displayed here -->
                     <div class="participant">
                         <div class="participant-avatar">
                             {{ request.user.username|slice:":1"|upper }}
@@ -284,6 +439,11 @@
     const reservationId = "{{ reservation.id }}";
     const username = "{{ request.user.username }}";
     const userId = "{{ request.user.id }}";
+    const ROOM_ID = reservationId;
+    const CURRENT_USER = {
+        id: userId,
+        username: username
+    };
     
     // Participants tracking
     const participants = new Map();
@@ -293,13 +453,29 @@
     const chatLog = document.getElementById('chat-log');
     const chatMessageInput = document.getElementById('chat-message-input');
     const chatForm = document.getElementById('chat-form');
+    const messageSubmit = document.getElementById('chat-message-submit');
     const connectionStatus = document.getElementById('connection-status');
     const userList = document.getElementById('user-list');
     const participantCount = document.getElementById('participant-count');
     const leaveBtn = document.getElementById('leave-btn');
+    const startCallBtn = document.getElementById('startCall');
+    const endCallBtn = document.getElementById('endCall');
+    const videoCallControls = document.getElementById('videoCallControls');
+    const toggleCameraBtn = document.getElementById('toggleCamera');
+    const toggleMicBtn = document.getElementById('toggleMic');
+    const startShareBtn = document.getElementById('startShare');
+    const stopShareBtn = document.getElementById('stopShare');
+    const screenShareVideo = document.getElementById('screenShareVideo');
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideos = document.getElementById('remoteVideos');
 
+    // WebSocket and WebRTC variables
     let chatSocket = null;
+    let localStream = null;
+    let screenStream = null;
+    let peerConnections = {};
 
+    // Initialize WebSocket
     function initializeWebSocket() {
         // Determine protocol based on current page
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -330,6 +506,7 @@
         }
     }
 
+    // Handle WebSocket messages
     function handleWebSocketMessage(e) {
         console.log('Message received:', e.data);
         const data = JSON.parse(e.data);
@@ -368,9 +545,23 @@
             case 'error':
                 displaySystemMessage('Error: ' + data.message);
                 break;
+                
+            // WebRTC signaling messages
+            case 'offer':
+                handleOffer(data);
+                break;
+                
+            case 'answer':
+                handleAnswer(data);
+                break;
+                
+            case 'ice_candidate':
+                handleIceCandidate(data);
+                break;
         }
     }
 
+    // WebSocket event handlers
     function handleWebSocketClose(e) {
         console.log('WebSocket connection closed');
         connectionStatus.innerHTML = '<i class="fas fa-times-circle me-2"></i> Disconnected from chat';
@@ -444,6 +635,7 @@
             
             const participantElement = document.createElement('div');
             participantElement.className = 'participant';
+            participantElement.setAttribute('data-user-id', id);
             
             participantElement.innerHTML = `
                 <div class="participant-avatar">
@@ -482,9 +674,7 @@
     }
 
     // Send message form submission
-    chatForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
+    function sendMessage() {
         const message = chatMessageInput.value.trim();
         if (message && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
             // Send message to server
@@ -495,17 +685,463 @@
             chatMessageInput.value = '';
             chatMessageInput.focus();
         }
+    }
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
     });
 
-    // Leave meeting button
-    leaveBtn.addEventListener('click', function() {
-        if (confirm('Are you sure you want to leave this meeting?')) {
-            window.location.href = '/';
+    messageSubmit.addEventListener('click', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    chatMessageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
         }
     });
 
-    // Initialize WebSocket when page loads
-    document.addEventListener('DOMContentLoaded', initializeWebSocket);
-</script>
+    // Video Call Functions
+    async function startCall() {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localVideo.srcObject = localStream;
+            
+            endCallBtn.style.display = 'inline-block';
+            startCallBtn.style.display = 'none';
+            videoCallControls.style.display = 'flex';
+            
+            // Notify other participants
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'start_call'
+                }));
+            }
+            
+            // Create peer connections with existing participants
+            participants.forEach((name, id) => {
+                if (id !== userId) {
+                    createPeerConnection(id);
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error starting video call:', error);
+            displaySystemMessage('Failed to access camera or microphone');
+        }
+    }
 
+    function endCall() {
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+            localVideo.srcObject = null;
+        }
+        
+        // Close all peer connections
+        Object.values(peerConnections).forEach(pc => pc.close());
+        peerConnections = {};
+        
+        // Clear remote videos
+        remoteVideos.innerHTML = '';
+        
+        endCallBtn.style.display = 'none';
+        startCallBtn.style.display = 'inline-block';
+        videoCallControls.style.display = 'none';
+        
+        // Notify other participants
+        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({
+                'type': 'end_call'
+            }));
+        }
+    }
+
+    function toggleCamera() {
+        if (localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                
+                if (videoTrack.enabled) {
+                    toggleCameraBtn.innerHTML = '<i class="fas fa-video"></i>';
+                } else {
+                    toggleCameraBtn.innerHTML = '<i class="fas fa-video-slash"></i>';
+                }
+            }
+        }
+    }
+
+    function toggleMic() {
+        if (localStream) {
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                
+                if (audioTrack.enabled) {
+                    toggleMicBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                } else {
+                    toggleMicBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                }
+            }
+        }
+    }
+
+    // Screen Sharing Functions
+    async function startScreenShare() {
+        try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            screenShareVideo.srcObject = screenStream;
+            screenShareVideo.style.display = 'block';
+            
+            startShareBtn.style.display = 'none';
+            stopShareBtn.style.display = 'inline-block';
+            
+            // Event listener for when user stops sharing via browser UI
+            screenStream.getVideoTracks()[0].addEventListener('ended', stopScreenShare);
+            
+            // Notify other participants
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'start_screen_share'
+                }));
+            }
+            
+        } catch (error) {
+            console.error('Error starting screen share:', error);
+            displaySystemMessage('Failed to share screen');
+        }
+    }
+
+    function stopScreenShare() {
+        if (screenStream) {
+            screenStream.getTracks().forEach(track => track.stop());
+            screenShareVideo.srcObject = null;
+            screenShareVideo.style.display = 'none';
+        }
+        
+        startShareBtn.style.display = 'inline-block';
+        stopShareBtn.style.display = 'none';
+        
+        // Notify other participants
+        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({
+                'type': 'stop_screen_share'
+            }));
+        }
+    }
+
+    // Whiteboard Functions
+    function initializeWhiteboard() {
+        const canvas = document.getElementById('whiteboard');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSize = document.getElementById('brushSize');
+        const pencilTool = document.getElementById('pencilTool');
+        const eraserTool = document.getElementById('eraserTool');
+        const clearBoard = document.getElementById('clearBoard');
+        const saveBoard = document.getElementById('saveBoard');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 400;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Drawing variables
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentTool = 'pencil';
+        
+        // Tool selection
+        pencilTool.addEventListener('click', () => {
+            currentTool = 'pencil';
+            pencilTool.classList.add('active');
+            eraserTool.classList.remove('active');
+        });
+        
+        eraserTool.addEventListener('click', () => {
+            currentTool = 'eraser';
+            eraserTool.classList.add('active');
+            pencilTool.classList.remove('active');
+        });
+        
+        // Drawing functions
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(e.offsetX, e.offsetY);
+            
+            if (currentTool === 'pencil') {
+                ctx.strokeStyle = colorPicker.value;
+            } else if (currentTool === 'eraser') {
+                ctx.strokeStyle = '#FFFFFF';
+            }
+            
+            ctx.lineWidth = brushSize.value;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+            
+            // Send drawing data to server
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'whiteboard_data',
+                    'data': {
+                        fromX: lastX,
+                        fromY: lastY,
+                        toX: e.offsetX,
+                        toY: e.offsetY,
+                        color: ctx.strokeStyle,
+                        lineWidth: ctx.lineWidth,
+                        tool: currentTool
+                    }
+                }));
+            }
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+        }
+        
+        // Clear whiteboard
+        clearBoard.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear the whiteboard?')) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Notify other participants
+                if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                    chatSocket.send(JSON.stringify({
+                        'type': 'whiteboard_clear'
+                    }));
+                }
+            }
+        });
+        
+        // Save whiteboard as image
+        saveBoard.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'whiteboard.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+        
+        // Event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+        
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        });
+        
+        canvas.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            const mouseEvent = new MouseEvent('mouseup');
+            canvas.dispatchEvent(mouseEvent);
+        });
+        
+        // Handle received whiteboard data
+        window.handleWhiteboardData = function(data) {
+            ctx.beginPath();
+            ctx.moveTo(data.fromX, data.fromY);
+            ctx.lineTo(data.toX, data.toY);
+            ctx.strokeStyle = data.color;
+            ctx.lineWidth = data.lineWidth;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        };
+        
+        window.handleWhiteboardClear = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        };
+    }
+    
+    // WebRTC Functions
+    function createPeerConnection(remotePeerId) {
+        // ICE servers configuration (STUN/TURN)
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        
+        const peerConnection = new RTCPeerConnection(configuration);
+        peerConnections[remotePeerId] = peerConnection;
+        
+        // Add local tracks to the connection
+        if (localStream) {
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+        }
+        
+        // Handle ICE candidates
+        peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+                if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                    chatSocket.send(JSON.stringify({
+                        'type': 'ice_candidate',
+                        'candidate': event.candidate,
+                        'recipient_id': remotePeerId
+                    }));
+                }
+            }
+        };
+        
+        // Handle incoming tracks
+        peerConnection.ontrack = event => {
+            // Create container for remote video
+            const remoteVideoContainer = document.createElement('div');
+            remoteVideoContainer.className = 'remote-video-container';
+            remoteVideoContainer.id = `remote-video-${remotePeerId}`;
+            
+            // Create video element
+            const remoteVideo = document.createElement('video');
+            remoteVideo.className = 'remote-video';
+            remoteVideo.autoplay = true;
+            remoteVideo.playsInline = true;
+            remoteVideo.srcObject = event.streams[0];
+            
+            // Create video label
+            const videoLabel = document.createElement('div');
+            videoLabel.className = 'video-label';
+            videoLabel.textContent = participants.get(remotePeerId) || 'Unknown';
+            
+            remoteVideoContainer.appendChild(remoteVideo);
+            remoteVideoContainer.appendChild(videoLabel);
+            remoteVideos.appendChild(remoteVideoContainer);
+        };
+        
+        // Creating offer (as initiator)
+        if (localStream) {
+            peerConnection.createOffer()
+                .then(offer => peerConnection.setLocalDescription(offer))
+                .then(() => {
+                    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                        chatSocket.send(JSON.stringify({
+                            'type': 'offer',
+                            'offer': peerConnection.localDescription,
+                            'recipient_id': remotePeerId
+                        }));
+                    }
+                })
+                .catch(error => console.error('Error creating offer:', error));
+        }
+        
+        return peerConnection;
+    }
+    
+    // Handle WebRTC offers
+    function handleOffer(data) {
+        const remotePeerId = data.sender_id;
+        
+        // Create peer connection if it doesn't exist
+        if (!peerConnections[remotePeerId]) {
+            const peerConnection = createPeerConnection(remotePeerId);
+            
+            // Set remote description and create answer
+            peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer))
+                .then(() => peerConnection.createAnswer())
+                .then(answer => peerConnection.setLocalDescription(answer))
+                .then(() => {
+                    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                        chatSocket.send(JSON.stringify({
+                            'type': 'answer',
+                            'answer': peerConnection.localDescription,
+                            'recipient_id': remotePeerId
+                        }));
+                    }
+                })
+                .catch(error => console.error('Error handling offer:', error));
+        }
+    }
+    
+    // Handle WebRTC answers
+    function handleAnswer(data) {
+        const remotePeerId = data.sender_id;
+        const peerConnection = peerConnections[remotePeerId];
+        
+        if (peerConnection) {
+            peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer))
+                .catch(error => console.error('Error handling answer:', error));
+        }
+    }
+    
+    // Handle ICE candidates
+    function handleIceCandidate(data) {
+        const remotePeerId = data.sender_id;
+        const peerConnection = peerConnections[remotePeerId];
+        
+        if (peerConnection) {
+            peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate))
+                .catch(error => console.error('Error adding ICE candidate:', error));
+        }
+    }
+    
+    // Leave meeting button
+    leaveBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to leave this meeting?')) {
+            // End ongoing calls and screen shares
+            endCall();
+            stopScreenShare();
+            
+            // Close WebSocket
+            if (chatSocket) {
+                chatSocket.close();
+            }
+            
+            // Redirect to home
+            window.location.href = '/';
+        }
+    });
+    
+    // Event listeners for video call controls
+    startCallBtn.addEventListener('click', startCall);
+    endCallBtn.addEventListener('click', endCall);
+    toggleCameraBtn.addEventListener('click', toggleCamera);
+    toggleMicBtn.addEventListener('click', toggleMic);
+    startShareBtn.addEventListener('click', startScreenShare);
+    stopShareBtn.addEventListener('click', stopScreenShare);
+    
+    // Initialize WebSocket and whiteboard when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeWebSocket();
+        initializeWhiteboard();
+    });
+</script>
 {% endblock %}

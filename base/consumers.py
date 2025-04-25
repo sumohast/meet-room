@@ -172,3 +172,118 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'userId': str(message.user.id),
             'timestamp': message.timestamp.isoformat()
         } for message in reversed(messages)]  # Reverse to show oldest first
+    
+    
+class WebRTCSignalConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.reservation_id = self.scope['url_route']['kwargs']['reservation_id']
+        self.room_group_name = f'webrtc_{self.reservation_id}'
+        self.user = self.scope["user"]
+        
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        
+        await self.accept()
+        
+        # Notify others about new connection
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'user_connected',
+                'user_id': str(self.user.id),
+                'username': self.user.username
+            }
+        )
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'user_disconnected',
+                'user_id': str(self.user.id),
+                'username': self.user.username
+            }
+        )
+        
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        
+        message_type = data.get('type')
+        
+        if message_type == 'offer':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_offer',
+                    'offer': data.get('offer'),
+                    'sender_id': str(self.user.id),
+                    'receiver_id': data.get('receiver_id')
+                }
+            )
+        
+        elif message_type == 'answer':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_answer',
+                    'answer': data.get('answer'),
+                    'sender_id': str(self.user.id),
+                    'receiver_id': data.get('receiver_id')
+                }
+            )
+        
+        elif message_type == 'ice_candidate':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'webrtc_ice_candidate',
+                    'candidate': data.get('candidate'),
+                    'sender_id': str(self.user.id),
+                    'receiver_id': data.get('receiver_id')
+                }
+            )
+
+    async def user_connected(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'user_connected',
+            'user_id': event['user_id'],
+            'username': event['username']
+        }))
+
+    async def user_disconnected(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'user_disconnected',
+            'user_id': event['user_id'],
+            'username': event['username']
+        }))
+
+    async def webrtc_offer(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'offer',
+            'offer': event['offer'],
+            'sender_id': event['sender_id'],
+            'receiver_id': event['receiver_id']
+        }))
+
+    async def webrtc_answer(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'answer',
+            'answer': event['answer'],
+            'sender_id': event['sender_id'],
+            'receiver_id': event['receiver_id']
+        }))
+
+    async def webrtc_ice_candidate(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'ice_candidate',
+            'candidate': event['candidate'],
+            'sender_id': event['sender_id'],
+            'receiver_id': event['receiver_id']
+        }))

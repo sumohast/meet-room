@@ -474,6 +474,18 @@
     let localStream = null;
     let screenStream = null;
     let peerConnections = {};
+    let whiteboardHistory = [];
+
+    function sendWhiteboardData(recipient_id) {
+    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({
+            'type': 'whiteboard_history',
+            'recipient_id': recipient_id,
+            'history': whiteboardHistory
+        }));
+    }
+}
+
 
     // Initialize WebSocket
     function initializeWebSocket() {
@@ -505,13 +517,108 @@
             displaySystemMessage('Failed to establish WebSocket connection');
         }
     }
-
+    const roomActivities = {
+    callActive: false,
+    screenShareActive: false,
+    whiteboardInUse: false
+};
     // Handle WebSocket messages
     function handleWebSocketMessage(e) {
         console.log('Message received:', e.data);
         const data = JSON.parse(e.data);
         
         switch(data.type) {
+            // In the handleWebSocketMessage function, add these cases:
+
+            case 'whiteboard_history':
+                if (data.recipient_id === userId && data.history) {
+                    data.history.forEach(stroke => {
+                        if (window.handleWhiteboardData) {
+                            window.handleWhiteboardData(stroke);
+                        }
+                    });
+                }
+                break;
+
+            case 'user_join':
+                addParticipant(data.user_id, data.username);
+
+                if (userId === data.user_id) {
+                    displaySystemMessage('You joined the meeting');
+                } 
+                else {
+                    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                        chatSocket.send(JSON.stringify({
+                            'type': 'room_status',
+                            'recipient_id': data.user_id,
+                            'call_active': localStream !== null,
+                            'screen_share_active': screenStream !== null
+                        }));
+                    }
+                }
+
+                if(whiteboardHistory>0){
+                    sendWhiteboardData(data.user_id);
+                }
+
+                if (userId === data.user_id) {
+                    if(localStream){
+                        const pc = createPeerConnection(data.user_id);
+
+                        pc.createOffer()
+                            .then(offer => {
+                                return pc.setLocalDescription(offer);
+                            })
+                            .then(() => {
+
+                                if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                                    chatSocket.send(JSON.stringify({
+                                        'type': 'offer',
+                                        'offer': pc.localDescription,
+                                        'recipient_id': data.user_id,
+                                        'sender_id': userId
+                                    }));
+                                }
+
+                            });
+                    }
+            }
+                break ;
+            
+            case 'room_status':
+                if(data.recipient_id === userId) {
+                    if(data.call_active){
+                        displaySystemMessage('A video call is active');
+                        const joinCallBtn = document.createElement('button');
+                        joinCallBtn.className = 'btn btn-success btn-sm mt-2';
+                        joinCallBtn.innerHTML = '<i class="fas fa-phone"></i> Join Call';
+                        joinCallBtn.onclick = startCall;
+
+                        const joinCallMessage = document.createElement('div');
+                        joinCallMessage.className = 'message-system';
+                        joinCallMessage.appendChild(joinCallBtn);
+
+                        chatLog.appendChild(joinCallMessage);
+                        scrollToBottom();
+                    }
+                    if(data.screen_share_active){
+                        displaySystemMessage('Screen sharing is active');
+                    }
+                }
+                break;
+
+            case 'whiteboard_data':
+                if (window.handleWhiteboardData) {
+                    window.handleWhiteboardData(data.data);
+                }
+                break;
+
+            case 'whiteboard_clear':
+                if (window.handleWhiteboardClear) {
+                    window.handleWhiteboardClear();
+                }
+                break;
+
             case 'chat_message':
                 const isCurrentUser = data.user_id === userId;
                 displayMessage(
@@ -533,9 +640,16 @@
                     );
                 });
                 break;
-            
-            case 'user_join':
-                addParticipant(data.user_id, data.username);
+            // In the handleWebSocketMessage function, add this case:
+            case 'start_call':
+
+                displaySystemMessage(`${data.username} started a video call`);
+                if (!localStream && data.user_id !== userId) {
+                    // Prompt the user to join the call
+                    if (confirm(`${data.username} started a video call. Would you like to join?`)) {
+                        startCall();
+                    }
+                }
                 break;
             
             case 'user_leave':
@@ -557,6 +671,14 @@
                 
             case 'ice_candidate':
                 handleIceCandidate(data);
+                break;
+            
+            case 'start_screen_share':
+                displaySystemMessage(`${data.username} started screen sharing`);
+                break;
+                
+            case 'stop_screen_share':
+                displaySystemMessage(`${data.username} stopped screen sharing`);
                 break;
         }
     }
@@ -705,7 +827,10 @@
     });
 
     // Video Call Functions
+    // Modify the startCall function
+
     async function startCall() {
+
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localVideo.srcObject = localStream;
@@ -717,7 +842,9 @@
             // Notify other participants
             if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
                 chatSocket.send(JSON.stringify({
-                    'type': 'start_call'
+                    'type': 'start_call',
+                    'user_id': userId,
+                    'username': username
                 }));
             }
             
@@ -896,7 +1023,9 @@
             ctx.lineCap = 'round';
             ctx.stroke();
             
-            [lastX, lastY] = [e.offsetX, e.offsetY];
+            // Store current points for WebSocket transmission
+            const currentX = e.offsetX;
+            const currentY = e.offsetY;
             
             // Send drawing data to server
             if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
@@ -905,14 +1034,17 @@
                     'data': {
                         fromX: lastX,
                         fromY: lastY,
-                        toX: e.offsetX,
-                        toY: e.offsetY,
+                        toX: currentX,
+                        toY: currentY,
                         color: ctx.strokeStyle,
                         lineWidth: ctx.lineWidth,
                         tool: currentTool
                     }
                 }));
             }
+            
+            // Update last position
+            [lastX, lastY] = [currentX, currentY];
         }
         
         function stopDrawing() {
@@ -992,79 +1124,71 @@
     
     // WebRTC Functions
     function createPeerConnection(remotePeerId) {
-        // ICE servers configuration (STUN/TURN)
-        const configuration = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
-        
-        const peerConnection = new RTCPeerConnection(configuration);
-        peerConnections[remotePeerId] = peerConnection;
-        
-        // Add local tracks to the connection
-        if (localStream) {
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-        }
-        
-        // Handle ICE candidates
-        peerConnection.onicecandidate = event => {
-            if (event.candidate) {
-                if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                    chatSocket.send(JSON.stringify({
-                        'type': 'ice_candidate',
-                        'candidate': event.candidate,
-                        'recipient_id': remotePeerId
-                    }));
-                }
-            }
-        };
-        
-        // Handle incoming tracks
-        peerConnection.ontrack = event => {
-            // Create container for remote video
-            const remoteVideoContainer = document.createElement('div');
-            remoteVideoContainer.className = 'remote-video-container';
-            remoteVideoContainer.id = `remote-video-${remotePeerId}`;
-            
-            // Create video element
-            const remoteVideo = document.createElement('video');
-            remoteVideo.className = 'remote-video';
-            remoteVideo.autoplay = true;
-            remoteVideo.playsInline = true;
-            remoteVideo.srcObject = event.streams[0];
-            
-            // Create video label
-            const videoLabel = document.createElement('div');
-            videoLabel.className = 'video-label';
-            videoLabel.textContent = participants.get(remotePeerId) || 'Unknown';
-            
-            remoteVideoContainer.appendChild(remoteVideo);
-            remoteVideoContainer.appendChild(videoLabel);
-            remoteVideos.appendChild(remoteVideoContainer);
-        };
-        
-        // Creating offer (as initiator)
-        if (localStream) {
-            peerConnection.createOffer()
-                .then(offer => peerConnection.setLocalDescription(offer))
-                .then(() => {
-                    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                        chatSocket.send(JSON.stringify({
-                            'type': 'offer',
-                            'offer': peerConnection.localDescription,
-                            'recipient_id': remotePeerId
-                        }));
-                    }
-                })
-                .catch(error => console.error('Error creating offer:', error));
-        }
-        
-        return peerConnection;
+    const configuration = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    };
+    
+    const peerConnection = new RTCPeerConnection(configuration);
+    peerConnections[remotePeerId] = peerConnection;
+    
+    // Add local tracks to the connection
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
     }
+    
+    // Handle ICE candidates
+    peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'ice_candidate',
+                    'candidate': event.candidate,
+                    'recipient_id': remotePeerId,
+                    'sender_id': userId
+                }));
+            }
+        }
+    };
+    
+    // Handle incoming tracks
+    peerConnection.ontrack = event => {
+        console.log(`Received tracks from peer ${remotePeerId}`);
+        
+        // Remove any existing video element for this peer
+        const existingContainer = document.getElementById(`remote-video-${remotePeerId}`);
+        if (existingContainer) {
+            existingContainer.remove();
+        }
+        
+        // Create container for remote video
+        const remoteVideoContainer = document.createElement('div');
+        remoteVideoContainer.className = 'remote-video-container';
+        remoteVideoContainer.id = `remote-video-${remotePeerId}`;
+        
+        // Create video element
+        const remoteVideo = document.createElement('video');
+        remoteVideo.className = 'remote-video';
+        remoteVideo.autoplay = true;
+        remoteVideo.playsInline = true;
+        remoteVideo.srcObject = event.streams[0];
+        
+        // Create video label
+        const videoLabel = document.createElement('div');
+        videoLabel.className = 'video-label';
+        videoLabel.textContent = participants.get(remotePeerId) || 'Unknown';
+        
+        remoteVideoContainer.appendChild(remoteVideo);
+        remoteVideoContainer.appendChild(videoLabel);
+        remoteVideos.appendChild(remoteVideoContainer);
+    };
+    
+    return peerConnection;
+}
     
     // Handle WebRTC offers
     function handleOffer(data) {
@@ -1104,15 +1228,49 @@
     
     // Handle ICE candidates
     function handleIceCandidate(data) {
+
         const remotePeerId = data.sender_id;
         const peerConnection = peerConnections[remotePeerId];
         
         if (peerConnection) {
-            peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate))
-                .catch(error => console.error('Error adding ICE candidate:', error));
+            try {
+                peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate))
+                    .catch(error => console.error('Error adding ICE candidate:', error));
+            } catch (e) {
+                console.error('Error processing ICE candidate:', e);
+            }
+        } else {
+            console.warn('Received ICE candidate for non-existent peer connection:', remotePeerId);
+            // Store the candidate for later use when the connection is created
+            if (!pendingIceCandidates[remotePeerId]) {
+                pendingIceCandidates[remotePeerId] = [];
+            }
+            pendingIceCandidates[remotePeerId].push(data.candidate);
         }
     }
     
+    function initiateConnectionsWithAllUsers() {
+    participants.forEach((name, id) => {
+        if (id !== userId && !peerConnections[id]) {
+            const pc = createPeerConnection(id);
+            
+            // Only the call initiator creates offers
+            pc.createOffer()
+                .then(offer => pc.setLocalDescription(offer))
+                .then(() => {
+                    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                        chatSocket.send(JSON.stringify({
+                            'type': 'offer',
+                            'offer': pc.localDescription,
+                            'recipient_id': id,
+                            'sender_id': userId
+                        }));
+                    }
+                })
+                .catch(error => console.error('Error creating offer:', error));
+        }
+    });
+}
     // Leave meeting button
     leaveBtn.addEventListener('click', function() {
         if (confirm('Are you sure you want to leave this meeting?')) {

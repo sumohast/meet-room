@@ -1,0 +1,654 @@
+/* static/css/discord-theme.css - Enhanced Version for Readability */
+
+/* Discord-like Color Palette */
+:root {
+    --discord-dark-bg: #2C2F33; /* Main background color */
+    --discord-surface-1: #23272A; /* Darker background for sidebars, channel list */
+    --discord-surface-2: #36393F; /* Main content area background */
+    --discord-text-primary: #ffffff; /* Changed to pure white for maximum contrast */
+    --discord-text-secondary: #C8CDD0; /* Brighter secondary text for better readability */
+    --discord-blue: #7289DA; /* Primary action color (Discord blue) - more vibrant */
+    --discord-blue-hover: #677BC4; /* Darker blue on hover */
+    --discord-green: #43B581; /* Success/online status */
+    --discord-red: #F04747; /* Error/danger/offline status */
+    --discord-yellow: #FCC047; /* Warning */
+    --discord-border-light: rgba(255, 255, 255, 0.1); /* Lighter border for subtle separation */
+    --discord-shadow-dark: rgba(0, 0, 0, 0.4); /* Darker shadow for depth */
+    --discord-shadow-light: rgba(0, 0, 0, 0.2); /* Lighter shadow for interactive elements */
+}
+
+/* Base Body Styles - Override Bootstrap & dark-theme */
+body {
+    background-color: var(--discord-dark-bg) !important;
+    color: var(--discord-text-primary) !important;
+    font-family: 'Roboto', sans-serif !important;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    line-height: 1.7; /* Increased for better readability */
+}
+
+/* Hide Bootstrap Navbar default styling from main.html if it's there */
+.navbar {
+    display: none !important;
+}
+
+/* Main App Container - Discord's three-column layout */
+.discord-app-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Left Sidebar - Server/Channel List */
+.sidebar-left {
+    width: 240px;
+    background-color: var(--discord-surface-1);
+    padding: 10px 0;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    border-right: 1px solid var(--discord-border-light); /* Subtle right border */
+    box-shadow: 2px 0 5px var(--discord-shadow-dark); /* Shadow for depth */
+}
+
+.sidebar-left .brand-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: var(--discord-text-primary);
+    font-size: 1.2rem; /* Slightly larger */
+    font-weight: 700; /* Bolder */
+    text-decoration: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    margin-bottom: 10px;
+    background: linear-gradient(to right, var(--discord-surface-1), rgba(35, 39, 42, 0.8)); /* Subtle gradient */
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-left .brand-link i {
+    color: var(--discord-blue);
+    margin-right: 10px;
+    text-shadow: 0 0 5px rgba(114, 137, 218, 0.5); /* Subtle glow */
+}
+
+.sidebar-left .nav-category {
+    color: var(--discord-text-secondary);
+    font-size: 0.85rem; /* Slightly larger */
+    text-transform: uppercase;
+    margin: 15px 15px 5px 15px;
+    font-weight: 800; /* Even bolder category text */
+    letter-spacing: 0.8px; /* Slight letter spacing */
+}
+
+.sidebar-left .nav-item-discord a {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px; /* More padding */
+    margin: 0 10px 5px 10px;
+    border-radius: 6px; /* Softer corners */
+    color: var(--discord-text-primary);
+    text-decoration: none;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    font-weight: 600; /* Bolder text */
+    font-size: 0.95rem; /* Slightly larger font */
+}
+
+.sidebar-left .nav-item-discord a:hover {
+    background-color: var(--discord-surface-2); /* Darker on hover */
+    color: var(--discord-text-primary);
+}
+
+.sidebar-left .nav-item-discord a.active {
+    background-color: var(--discord-blue);
+    color: #fff;
+    box-shadow: 0 2px 5px var(--discord-shadow-light); /* Subtle shadow for active state */
+}
+
+.sidebar-left .nav-item-discord a.active:hover {
+    background-color: var(--discord-blue-hover);
+}
+
+.sidebar-left .nav-item-discord i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+    color: var(--discord-text-secondary); /* Default icon color */
+    transition: color 0.2s ease;
+}
+
+.sidebar-left .nav-item-discord a.active i {
+    color: #fff; /* White icon on active state */
+}
+
+/* User Panel at the bottom of the left sidebar */
+.user-panel-discord {
+    margin-top: auto;
+    padding: 10px 15px;
+    background-color: var(--discord-surface-2); /* Darker panel background */
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3); /* Shadow on top */
+}
+
+.user-panel-discord .user-avatar {
+    width: 38px; /* Slightly larger avatar */
+    height: 38px;
+    border-radius: 50%;
+    background-color: var(--discord-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: bold;
+    font-size: 1rem; /* Larger font for initial */
+    margin-right: 10px;
+    flex-shrink: 0;
+    border: 2px solid var(--discord-green); /* Online indicator border */
+    box-shadow: 0 0 8px rgba(67, 181, 129, 0.5); /* Glow for online */
+}
+
+.user-panel-discord .user-info {
+    flex-grow: 1;
+    color: var(--discord-text-primary);
+    font-size: 0.95rem; /* Slightly larger info text */
+}
+
+.user-panel-discord .user-info .username {
+    font-weight: 600;
+}
+
+.user-panel-discord .user-actions {
+    display: flex;
+    gap: 8px; /* More space between actions */
+}
+
+.user-panel-discord .user-actions a {
+    color: var(--discord-text-secondary);
+    padding: 5px;
+    border-radius: 3px;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.user-panel-discord .user-actions a:hover {
+    color: var(--discord-text-primary);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+
+/* Main Content Area */
+.content-main-discord {
+    flex-grow: 1;
+    background-color: var(--discord-surface-2);
+    overflow-y: auto;
+    padding: 30px; /* More generous padding */
+    position: relative; /* For breadcrumbs positioning */
+}
+
+.content-main-discord h1 {
+    color: var(--discord-text-primary);
+    font-size: 2.2rem; /* Larger heading */
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--discord-border-light);
+    padding-bottom: 15px;
+    font-weight: 700;
+}
+
+/* Breadcrumb */
+.breadcrumb-discord {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 20px;
+    list-style: none; /* Remove default list style */
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.95rem; /* Slightly larger */
+}
+
+.breadcrumb-discord-item {
+    color: var(--discord-text-secondary);
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-discord-item:not(:last-child)::after {
+    content: '/';
+    margin: 0 8px;
+    color: var(--discord-text-secondary);
+}
+
+.breadcrumb-discord-item.active {
+    color: var(--discord-text-primary);
+    font-weight: 600; /* Bolder active item */
+}
+
+.breadcrumb-discord-item a {
+    color: var(--discord-blue);
+    text-decoration: none;
+}
+.breadcrumb-discord-item a:hover {
+    text-decoration: underline;
+}
+
+/* Room List in the home page main content */
+.room-grid-discord {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Slightly wider cards */
+    gap: 25px; /* More space between cards */
+}
+
+.room-card-discord {
+    background-color: var(--discord-surface-1);
+    border-radius: 10px; /* More rounded corners */
+    box-shadow: 0 4px 15px var(--discord-shadow-dark); /* Deeper shadow */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.room-card-discord:hover {
+    transform: translateY(-5px); /* Lift on hover */
+    box-shadow: 0 8px 20px var(--discord-shadow-dark); /* Stronger shadow on hover */
+}
+
+.room-card-discord .card-header-discord {
+    background-color: var(--discord-surface-1);
+    padding: 18px 25px; /* More padding */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--discord-text-primary);
+    font-size: 1.3rem; /* Larger title */
+    font-weight: 700;
+}
+
+.room-card-discord .card-body-discord {
+    padding: 25px; /* More padding */
+    color: var(--discord-text-secondary);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.room-card-discord .card-body-discord .description {
+    margin-bottom: 20px; /* More space */
+    font-size: 1rem; /* Slightly larger font */
+    line-height: 1.7; /* Improved readability */
+}
+
+.room-card-discord .card-body-discord .feature-badge-discord {
+    background-color: var(--discord-surface-2); /* Slightly darker background for features */
+    color: var(--discord-text-secondary);
+    padding: 6px 12px; /* More padding */
+    border-radius: 5px; /* More rounded */
+    font-size: 0.9rem; /* Slightly larger font */
+    margin-right: 8px; /* More space */
+    margin-bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* Gap between icon and text */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+    font-weight: 500; /* Make text a bit bolder */
+}
+
+.room-card-discord .card-body-discord .status-text-discord {
+    margin-top: 20px; /* More space */
+    font-weight: 600; /* Bolder status text */
+    font-size: 1.05rem; /* Slightly larger font */
+    color: var(--discord-text-primary); /* Ensure it's very clear */
+}
+
+.room-card-discord .card-footer-discord {
+    background-color: var(--discord-surface-1);
+    padding: 18px 25px; /* More padding */
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Buttons */
+.btn-discord {
+    background-color: var(--discord-blue);
+    border: none;
+    color: #fff;
+    padding: 10px 20px; /* More padding */
+    border-radius: 5px; /* More rounded */
+    font-weight: 600; /* Bolder text */
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    text-transform: uppercase; /* Uppercase text for buttons */
+    letter-spacing: 0.5px;
+}
+
+.btn-discord:hover {
+    background-color: var(--discord-blue-hover);
+    color: #fff;
+    box-shadow: 0 4px 10px var(--discord-shadow-light); /* Shadow on hover */
+}
+
+.btn-discord-outline {
+    background-color: transparent;
+    border: 2px solid var(--discord-blue); /* Thicker border */
+    color: var(--discord-blue);
+    padding: 8px 18px; /* Adjusted padding */
+    border-radius: 5px;
+    font-weight: 600;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-discord-outline:hover {
+    background-color: var(--discord-blue);
+    color: #fff;
+    box-shadow: 0 4px 10px var(--discord-shadow-light);
+}
+
+.btn-discord-danger {
+    background-color: var(--discord-red);
+    border: none;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: 600;
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-discord-danger:hover {
+    background-color: #D63030; /* Slightly darker red */
+    color: #fff;
+    box-shadow: 0 4px 10px var(--discord-shadow-light);
+}
+
+/* Status badges */
+.badge-discord-success {
+    background-color: var(--discord-green) !important;
+    color: #fff !important;
+    padding: 5px 10px; /* More padding */
+    border-radius: 4px; /* More rounded */
+    font-size: 0.85rem; /* Slightly larger font */
+    font-weight: 700; /* Bolder */
+    text-transform: uppercase;
+}
+
+.badge-discord-danger {
+    background-color: var(--discord-red) !important;
+    color: #fff !important;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Tables - for Upcoming Reservations section */
+.table-discord {
+    width: 100%;
+    border-collapse: separate; /* Allows border-radius on cells */
+    border-spacing: 0; /* No space between cells */
+    margin-top: 15px;
+    border-radius: 8px; /* Rounded corners for the entire table */
+    overflow: hidden; /* Ensures rounded corners are visible */
+    box-shadow: 0 4px 15px var(--discord-shadow-dark); /* Shadow for table */
+}
+
+.table-discord th, .table-discord td {
+    padding: 15px 20px; /* More padding */
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15); /* Slightly darker border */
+    color: var(--discord-text-primary);
+}
+
+.table-discord th {
+    background-color: var(--discord-surface-1);
+    color: var(--discord-text-secondary);
+    font-weight: 700; /* Bolder header */
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* First and last row/cell rounding */
+.table-discord thead tr:first-child th:first-child { border-top-left-radius: 8px; }
+.table-discord thead tr:first-child th:last-child { border-top-right-radius: 8px; }
+.table-discord tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+.table-discord tbody tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+
+
+.table-discord tbody tr:hover {
+    background-color: rgba(114, 137, 218, 0.1); /* Subtle blue hover for rows */
+}
+
+/* Alerts */
+.alert-discord {
+    padding: 18px 25px; /* More padding */
+    border-radius: 8px; /* More rounded */
+    margin-bottom: 25px; /* More space */
+    font-size: 1rem; /* Slightly larger font */
+    display: flex;
+    align-items: center;
+    font-weight: 500; /* Make alert text a bit bolder */
+}
+
+.alert-discord i.fas {
+    margin-right: 10px;
+    font-size: 1.2rem;
+}
+
+.alert .btn-close {
+    filter: invert(1); /* Makes close button white */
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.alert .btn-close:hover {
+    opacity: 1;
+}
+
+/* Scrollbar styles (Discord-like) */
+::-webkit-scrollbar {
+    width: 10px; /* Wider scrollbar */
+    height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3); /* Lighter thumb */
+    border-radius: 5px; /* More rounded */
+    border: 2px solid var(--discord-surface-2); /* Border to simulate track */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+::-webkit-scrollbar-track {
+    background-color: var(--discord-surface-2); /* Track matches content background */
+}
+
+/* General overrides for elements that might not be explicitly styled above */
+.card, .form-control {
+    background-color: var(--discord-surface-1) !important; /* Consistent with other surfaces */
+    border: 1px solid rgba(0, 0, 0, 0.2) !important;
+    color: var(--discord-text-primary) !important;
+    border-radius: 6px !important;
+}
+
+.form-control::placeholder {
+    color: var(--discord-text-secondary) !important;
+}
+
+.form-control:focus {
+    border-color: var(--discord-blue) !important;
+    box-shadow: 0 0 0 0.2rem rgba(114, 137, 218, 0.25) !important; /* Blue glow on focus */
+}
+
+select.form-control {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23C8CDD0' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") !important; /* Icon matches text secondary */
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+}
+
+
+/* Adjustments for specific elements mentioned in main.html or common patterns */
+a {
+    color: var(--discord-blue);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+a:hover {
+    color: var(--discord-blue-hover);
+    text-decoration: underline;
+}
+
+footer {
+    background-color: var(--discord-surface-1);
+    border-top: 1px solid rgba(0,0,0,0.2);
+    color: var(--discord-text-secondary);
+    margin-top: 40px;
+    padding: 20px 0;
+    text-align: center;
+    font-size: 0.9rem; /* Slightly larger footer text */
+}
+
+/* --- Specific enhancements for forms --- */
+label.form-label {
+    color: var(--discord-text-primary);
+    font-weight: 600; /* Bolder label */
+    margin-bottom: 0.6rem; /* More space */
+    font-size: 0.95rem;
+}
+
+.form-text {
+    color: var(--discord-text-secondary);
+    font-size: 0.88rem; /* Slightly larger */
+    line-height: 1.5;
+}
+
+.form-check-input {
+    background-color: var(--discord-surface-1);
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+.form-check-input:checked {
+    background-color: var(--discord-blue);
+    border-color: var(--discord-blue);
+}
+
+/* --- Specific enhancements for profile page stats --- */
+.stat-card {
+    background-color: var(--discord-surface-1);
+    border-radius: 10px;
+    box-shadow: 0 4px 15px var(--discord-shadow-dark);
+    padding: 25px;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px var(--discord-shadow-dark);
+}
+
+.stat-number {
+    color: var(--discord-blue);
+    font-size: 3.2rem; /* Larger number */
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(114, 137, 218, 0.4);
+}
+
+.stat-label {
+    color: var(--discord-text-secondary);
+    font-size: 1.15rem; /* Larger label */
+    margin-top: 8px; /* More space */
+    font-weight: 600; /* Bolder label */
+}
+
+/* --- Specific enhancements for calendar --- */
+.calendar-day {
+    background-color: var(--discord-surface-1);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px var(--discord-shadow-light);
+    transition: transform 0.2s ease;
+}
+.calendar-day:hover {
+    transform: translateY(-3px);
+}
+
+.calendar-date {
+    color: var(--discord-blue);
+    font-weight: 700;
+    border-bottom: 1px solid var(--discord-border-light);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    font-size: 1.2rem; /* Larger */
+}
+
+.calendar-event {
+    background-color: var(--discord-surface-2);
+    border-left: 5px solid var(--discord-blue);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+    color: var(--discord-text-primary);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+.calendar-event strong {
+    color: var(--discord-text-primary);
+    font-weight: 600; /* Bolder time */
+}
+.calendar-event small {
+    color: var(--discord-text-secondary);
+    font-size: 0.85rem; /* Clearer small text */
+}
+
+.calendar-event .btn-sm.btn-danger {
+    background-color: var(--discord-red);
+    border: none;
+    color: white;
+    font-size: 0.85rem; /* Slightly larger */
+    padding: 5px 10px; /* More padding */
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+.calendar-event .btn-sm.btn-danger:hover {
+    background-color: #D63030;
+}
+
+/* --- Pagination --- */
+.pagination-discord {
+    margin-top: 30px;
+}
+.page-item-discord .page-link-discord {
+    background-color: var(--discord-surface-1);
+    border: 1px solid rgba(0,0,0,0.2);
+    color: var(--discord-text-primary);
+    border-radius: 5px !important;
+    margin: 0 3px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-weight: 600; /* Bolder page numbers */
+}
+.page-item-discord .page-link-discord:hover {
+    background-color: var(--discord-surface-2);
+    color: var(--discord-blue);
+}
+.page-item-discord.active .page-link-discord {
+    background-color: var(--discord-blue) !important;
+    border-color: var(--discord-blue) !important;
+    color: #fff !important;
+}

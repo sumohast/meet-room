@@ -149,8 +149,12 @@ DEFAULT_FROM_EMAIL = 'sumohast@gmail.com'  # ایمیل فرستنده
 
 ASGI_APPLICATION = 'myproject.asgi.application'
 
+# myproject/settings.py
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('localhost', 6379)], 
+        },
     },
 }

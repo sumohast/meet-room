@@ -652,3 +652,56 @@ label.form-label {
     border-color: var(--discord-blue) !important;
     color: #fff !important;
 }
+/* static/css/discord-theme.css */
+
+/* ... (کدهای موجود شما) ... */
+
+/* Improved Table Readability on Dark Backgrounds */
+/* This will apply to all tables unless overridden by .table-discord specific styles */
+.table {
+    color: var(--discord-text-primary); /* متن اصلی جدول را سفیدتر می‌کند */
+}
+
+.table th {
+    color: var(--discord-text-primary); /* متن هدر جدول را سفیدتر می‌کند */
+    /* می‌توانید از --discord-text-secondary هم استفاده کنید اگر --discord-text-primary بیش از حد روشن است */
+    /* color: var(--discord-text-secondary); */
+    font-weight: 600; /* کمی ضخیم‌تر کردن فونت هدر برای خوانایی بهتر */
+}
+
+.table td {
+    color: var(--discord-text-secondary); /* متن سلول‌های جدول را کمی روشن‌تر از متن معمولی می‌کند */
+    /* یا اگر می‌خواهید کاملا سفید باشد: */
+    /* color: var(--discord-text-primary); */
+}
+
+/* Ensure table links are also visible */
+.table a {
+    color: var(--discord-blue); /* رنگ لینک‌های داخل جدول */
+    font-weight: 500; /* کمی ضخیم‌تر کردن لینک‌ها */
+}
+
+.table a:hover {
+    color: var(--discord-blue-hover);
+    text-decoration: underline;
+}
+
+/* Specific styling for badges within tables if needed */
+.table .badge {
+    color: #fff !important; /* اطمینان از سفید بودن متن badge ها */
+    font-weight: 500;
+}
+
+/* Adjusting the .table-discord specifically if it's used in room_management.html */
+/* If room_management.html uses a table with class "table" and not "table-discord", */
+/* the above generic .table styles should suffice. */
+/* If it uses .table-discord, these are already defined but we ensure primary text color */
+
+.table-discord th, .table-discord td {
+    color: var(--discord-text-primary); /* Ensure primary text color */
+}
+
+.table-discord th {
+    color: var(--discord-text-secondary); /* Headers can be secondary text for contrast */
+    font-weight: 700;
+}

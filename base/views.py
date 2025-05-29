@@ -25,6 +25,9 @@ from django.core.serializers.json import DjangoJSONEncoder
 import logging
 logger = logging.getLogger(__name__)
 
+from .utils import send_email_in_background
+
+
 
 def home(request):
     # Query all rooms
@@ -136,71 +139,55 @@ def room_calendar(request, room_id):
 @login_required
 def create_reservation(request, room_id):
     room = get_object_or_404(Room, id=room_id)
-    
-    # Get initial data from query parameters
-    initial_data = {
-        'room': room,  # Pass the room object to the form
-    }
-    
+    initial_data = {'room': room}
     if request.GET.get('date'):
         initial_data['date'] = request.GET.get('date')
-    
-    # Handle time slot from query parameters
-    start_time = request.GET.get('start')
-    end_time = request.GET.get('end')
-    if start_time and end_time:
-        initial_data['time_slot'] = f"{start_time}-{end_time}"
-    
+    start_time_query = request.GET.get('start')
+    end_time_query = request.GET.get('end')
+    if start_time_query and end_time_query:
+        initial_data['time_slot'] = f"{start_time_query}-{end_time_query}"
+
     if request.method == 'POST':
-        # Print POST data for debugging
-        print(f"POST data: {request.POST}")
-        
         form = ReservationForm(request.POST, initial=initial_data)
         if form.is_valid():
-            date = form.cleaned_data['date']
-            start_time = form.cleaned_data['start_time']
-            end_time = form.cleaned_data['end_time']
-            
-            if not room.is_available(date, start_time, end_time):
+            # ... (بخش مربوط به اعتبارسنجی و ذخیره رزرو بدون تغییر) ...
+            date_form = form.cleaned_data['date']
+            start_time_form = form.cleaned_data['start_time']
+            end_time_form = form.cleaned_data['end_time']
+
+            if not room.is_available(date_form, start_time_form, end_time_form):
                 messages.error(request, 'The selected time slot is not available. Please choose another time.')
                 return render(request, 'base/reservation_form.html', {'form': form, 'room': room})
-                
-            # Form is valid, check room capacity
+
             participant_count = form.cleaned_data.get('participant_count')
-            
             if participant_count > room.capacity:
                 messages.error(request, f'The number of participants ({participant_count}) exceeds the room capacity ({room.capacity}).')
-                context = {
-                    'form': form,
-                    'room': room,
-                }
+                context = {'form': form, 'room': room}
                 return render(request, 'base/reservation_form.html', context)
-                
-            # Create the reservation
+
             reservation = form.save(commit=False)
             reservation.room = room
             reservation.user = request.user
             
-            # Extract start_time and end_time from time_slot
-            time_slot = form.cleaned_data.get('time_slot')
-            if not time_slot and 'time_slot' in initial_data:
-                # Use initial time_slot if not in form data
-                time_slot = initial_data['time_slot']
+            time_slot_form = form.cleaned_data.get('time_slot') # تغییر نام متغیر
+            if not time_slot_form and 'time_slot' in initial_data:
+                time_slot_form = initial_data['time_slot']
                 
-            start_time_str, end_time_str = time_slot.split('-')
+            start_time_str, end_time_str = time_slot_form.split('-')
             reservation.start_time = datetime.strptime(start_time_str, '%H:%M').time()
             reservation.end_time = datetime.strptime(end_time_str, '%H:%M').time()
             
-            # Save the reservation to the database
             reservation.save()
-            print("========= SENDING MEETING CREATION NOTIFICATION =========")
-            print(f"Reservation created: {reservation.id} - {reservation.title}")
+            
+            logger.info(f"========= SENDING MEETING CREATION NOTIFICATION (via Thread) FOR RESERVATION {reservation.id} =========")
+            
             participants = reservation.get_participant_list()
+            
             if participants:
-                print(f"Sending notification to {len(participants)} participants: {', '.join(participants)}")
+                logger.info(f"Sending notification to {len(participants)} participants: {', '.join(participants)} for reservation {reservation.id}")
                 
-                subject = f"📅 Meeting Invite: {reservation.title}"
-                message = f"""
+                subject = f"📅 Meeting Invite: {reservation.title}" #
+                message_content = f"""
                 Hi there!
 
                 You're invited to an upcoming meeting:
@@ -216,47 +203,27 @@ def create_reservation(request, room_id):
                 We look forward to seeing you there!
                 Please add this to your calendar.
                 [View Details](http://localhost:8000)
-                """
+                """ #
                 
-                try:
-                    send_mail(
-                        subject=subject,
-                        message=message,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=participants,
-                        fail_silently=False,
-                    )
-                    print(f"Notification emails sent successfully!")
-                    
-                    # چون ایمیل ارسال شده، reservation.reminder_sent را true کنید
-                    # تا در ارسال زمانبندی شده دوباره ارسال نشود
-                    reservation.reminder_sent = True
-                    reservation.save(update_fields=['reminder_sent'])
-                    
-                except Exception as e:
-                    print(f"ERROR sending notification emails: {str(e)}")
+                # فراخوانی تابع برای ارسال ایمیل در پس‌زمینه
+                send_email_in_background(subject, message_content, participants, reservation_id=reservation.id)
+                # خط زیر را حذف کنید، چون reminder_sent برای یادآوری است نه دعوتنامه
+                # reservation.reminder_sent = True # <--- حذف شود
+                # reservation.save(update_fields=['reminder_sent']) # <--- حذف شود
             else:
-                print("No participant emails specified. No notifications sent.")
+                logger.info(f"No participant emails specified for reservation {reservation.id}. No notifications sent.")
             
-            # نمایش پیام موفقیت و ریدایرکت
-            messages.success(request, 'Reservation created successfully and notifications sent!')
+            messages.success(request, 'Reservation created successfully and notifications are being sent in the background!')
             return redirect('room-detail', pk=room.id)
-
-            # Show success message and redirect
-            #messages.success(request, 'Reservation created successfully!')
-            #return redirect('room-detail', pk=room.id)
         else:
-            # Form is invalid, print errors for debugging
-            print(f"Form errors: {form.errors}")
+            logger.error(f"Form errors during reservation: {form.errors}")
             messages.error(request, 'There was an error with your reservation. Please check the form.')
     else:
         form = ReservationForm(initial=initial_data)
     
-    context = {
-        'form': form,
-        'room': room,
-    }
+    context = {'form': form, 'room': room}
     return render(request, 'base/reservation_form.html', context)
+
 
 @login_required
 def user_reservations(request):
@@ -404,35 +371,39 @@ def delete_room(request, pk):
 
 # Email reminder function (to be scheduled with a task scheduler like Celery)
 # Email reminder function (to be scheduled with a task scheduler like Celery)
-def send_reservation_reminders():
-    """Send email reminders for upcoming reservations"""
-    print("========= STARTING EMAIL REMINDER PROCESS =========")
-    print(f"Current time: {datetime.now()}")
+# تابع ارسال یادآوری‌ها
+def send_reservation_reminders(): #
+    """
+    Send email reminders for upcoming reservations.
+    This function itself should be called by a scheduler (e.g., cron).
+    It will then dispatch email sending to background threads.
+    """
+    logger.info("========= STARTING EMAIL REMINDER PROCESS (Dispatching to Threads) =========")
+    logger.info(f"Current time: {datetime.now()}")
     
-    # Get reservations for tomorrow
-    tomorrow = datetime.now().date() + timedelta(days=1)
-    print(f"Looking for reservations on: {tomorrow}")
+    tomorrow = datetime.now().date() + timedelta(days=1) #
+    logger.info(f"Looking for reservations on: {tomorrow}")
     
-    upcoming_reservations = Reservation.objects.filter(
-        date=tomorrow,
-        reminder_sent=False
+    upcoming_reservations = Reservation.objects.filter( #
+        date=tomorrow, #
+        reminder_sent=False #
     )
     
-    print(f"Found {upcoming_reservations.count()} reservations that need reminders")
+    logger.info(f"Found {upcoming_reservations.count()} reservations that need reminders")
     
     for reservation in upcoming_reservations:
-        print(f"\nProcessing reservation: {reservation.id} - {reservation.title}")
-        print(f"Room: {reservation.room.name}")
-        print(f"Time: {reservation.start_time} - {reservation.end_time}")
+        logger.info(f"\nProcessing reservation for reminder: {reservation.id} - {reservation.title}")
         
-        participants = reservation.get_participant_list()
-        print(f"Participant emails extracted: {len(participants)}")
+        participants = reservation.get_participant_list() #
+        
         if participants:
-            print(f"Sending emails to: {', '.join(participants)}")
+            logger.info(f"Sending reminder emails to: {', '.join(participants)} for reservation {reservation.id}")
             
-            subject = f"Reminder: Meeting in {reservation.room.name} tomorrow"
-            message = f"""
-            Hello ,This is a reminder that you have a meeting scheduled for tomorrow:
+            subject = f"Reminder: Meeting in {reservation.room.name} tomorrow" #
+            message_content = f"""
+            Hello,
+
+            This is a reminder that you have a meeting scheduled for tomorrow:
             
             Title: {reservation.title}
             Room: {reservation.room.name}
@@ -444,28 +415,25 @@ def send_reservation_reminders():
             
             Please be on time.
             http://localhost:8000
-            """
+            """ #
             
-            try:
-                send_mail(
-                    subject=subject,
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=participants,
-                    fail_silently=False,
-                )
-                print(f"Email sent successfully!")
-                
-                # Mark as sent
-                reservation.reminder_sent = True
-                reservation.save()
-                print(f"Reservation {reservation.id} marked as reminded")
-            except Exception as e:
-                print(f"ERROR sending email: {str(e)}")
+            # فراخوانی تابع برای ارسال ایمیل یادآوری در پس‌زمینه
+            send_email_in_background(subject, message_content, participants, reservation_id=reservation.id)
+            
+            # علامت‌گذاری به عنوان ارسال شده (این کار بلافاصله انجام می‌شود،
+            # حتی اگر ارسال واقعی ایمیل در ترد کمی با تاخیر انجام شود یا ناموفق باشد.
+            # این یک بده‌بستان برای سادگی است. برای اطمینان بیشتر، نیاز به مکانیزم پیچیده‌تری دارید.)
+            reservation.reminder_sent = True #
+            reservation.save(update_fields=['reminder_sent']) #
+            logger.info(f"Reservation {reservation.id} marked as reminder_sent.")
         else:
-            print("No participant emails found, skipping this reservation")
+            logger.info(f"No participant emails found for reminder, skipping reservation {reservation.id}")
+            # اگر شرکت‌کننده‌ای وجود ندارد و نمی‌خواهید این رزرو دوباره پردازش شود:
+            # reservation.reminder_sent = True
+            # reservation.save(update_fields=['reminder_sent'])
+            
+    logger.info("\n========= EMAIL REMINDER DISPATCHING COMPLETED =========")
     
-    print("\n========= EMAIL REMINDER PROCESS COMPLETED =========")
 # Authentication Views
 def login_page(request):
     if request.user.is_authenticated:

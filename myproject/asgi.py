@@ -3,7 +3,8 @@ from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from channels.security.websocket import AllowedHostsOriginValidator
-import myproject.routing
+# فقط base.routing را وارد کنید
+import base.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
@@ -12,8 +13,11 @@ application = ProtocolTypeRouter({
     "websocket": AllowedHostsOriginValidator(
         AuthMiddlewareStack(
             URLRouter(
-                myproject.routing.websocket_urlpatterns
+                # از لیست الگوهای base.routing استفاده کنید
+                base.routing.websocket_urlpatterns
             )
         )
     ),
 })
+
+# Hint: if two routing => we have error !

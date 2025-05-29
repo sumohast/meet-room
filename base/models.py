@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from datetime import datetime, timedelta
 # در models.py در کلاس Reservation
 
+
 class Room(models.Model):
     name = models.CharField(max_length=100)
     capacity = models.IntegerField(default=10)
@@ -55,29 +56,32 @@ class Room(models.Model):
                 ).order_by('start_time').first()
             }
     
-    def get_available_time_slots(self, date): # this function returns available time slots for a given date
-        """Returns available time slots for a given date"""
-        # Define business hours (8 AM to 6 PM, 1-hour slots)
-        business_hours = [(datetime.strptime(f"{i}:00", "%H:%M").time(), 
-                          datetime.strptime(f"{i+1}:00", "%H:%M").time()) 
-                          for i in range(6, 22)]
+    def get_available_time_slots(self, date): #
+        """Returns available time slots for a given date based on defined TimeSlot model."""
+        # دریافت تمام اسلات‌های زمانی فعال از دیتابیس
+        all_defined_slots = TimeSlot.objects.filter(is_active=True).order_by('start_time')
         
+        if not all_defined_slots.exists():
+            return [] # اگر هیچ اسلات زمانی تعریف نشده باشد
+
         # Get all reservations for this room on the given date
-        reservations = self.reservation_set.filter(date=date)
-        booked_slots = [(res.start_time, res.end_time) for res in reservations]
+        reservations_for_date = self.reservation_set.filter(date=date) #
+        booked_slots_ranges = [(res.start_time, res.end_time) for res in reservations_for_date] #
         
-        # Filter out booked slots
-        available_slots = []
-        for start, end in business_hours:
-            is_available = True
-            for res_start, res_end in booked_slots:
-                if res_start < end and res_end > start:
-                    is_available = False
-                    break
-            if is_available:
-                available_slots.append((start, end))
+        available_slots_list = []
+        for slot in all_defined_slots:
+            slot_start, slot_end = slot.start_time, slot.end_time
+            is_slot_available = True
+            for res_start, res_end in booked_slots_ranges: #
+                # Check for overlap
+                if res_start < slot_end and res_end > slot_start: #
+                    is_slot_available = False #
+                    break #
+            if is_slot_available: #
+                # می‌توانید فرمت مورد نیازتان را برگردانید. اینجا (start_time, end_time) برگردانده شده.
+                available_slots_list.append((slot_start, slot_end)) #
         
-        return available_slots
+        return available_slots_list #
 
 class Reservation(models.Model):
     participant_count = models.IntegerField(default=1, help_text="Number of participants")
@@ -150,3 +154,21 @@ class ChatMessage(models.Model):
     def __str__(self):
         return f"{self.user.username}: {self.message[:20]}"
 
+class TimeSlot(models.Model):
+    start_time = models.TimeField(unique=True) # زمان شروع اسلات، باید منحصر به فرد باشد
+    end_time = models.TimeField()
+    is_active = models.BooleanField(default=True, help_text="فعال بودن اسلات برای نمایش در فرم‌ها")
+
+    class Meta:
+        ordering = ['start_time']
+        # می‌توانید یک محدودیت اضافه کنید که end_time همیشه بعد از start_time باشد
+        constraints = [
+            models.CheckConstraint(check=models.Q(end_time__gt=models.F('start_time')), name='end_time_after_start_time')
+        ]
+
+    def __str__(self):
+        return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
+
+    @property
+    def formatted_slot(self):
+        return f"{self.start_time.strftime('%H:%M')}-{self.end_time.strftime('%H:%M')}"

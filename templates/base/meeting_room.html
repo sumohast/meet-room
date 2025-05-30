@@ -4,402 +4,24 @@
 {% block title %}Meeting Room - {{ reservation.title }}{% endblock %}
 
 {% block extra_css %}
-<style>
-    body {
-        overflow: hidden; /* جلوگیری از اسکرول اضافی صفحه اصلی */
-        background-color: #2C2F33; /* رنگ پس‌زمینه اصلی اتاق جلسه */
-        color: #fff; /* رنگ متن پیش‌فرض */
-    }
-
-    .meeting-main-content {
-        position: absolute;
-        top: 0; /* اگر هدر سراسری دارید، باید ارتفاع آن را کم کنید */
-        left: 0;
-        right: 0;
-        bottom: 70px; /* ارتفاع نوار کنترل پایین + کمی فاصله */
-        display: flex;
-        flex-direction: column; /* برای چیدمان ویدئوها و سایر عناصر */
-        justify-content: center;
-        align-items: center;
-        padding: 10px;
-        gap: 10px; /* فاصله بین عناصر اصلی محتوا */
-    }
-
-    #videocall-container {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column; /* چیدمان remoteVideos و localVideo */
-        justify-content: center;
-        align-items: center;
-        position: relative; /* برای موقعیت‌دهی localVideo */
-    }
-
-    #remoteVideos {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        width: 100%;
-        height: calc(100% - 170px); /* ارتفاع را برای localVideo و کنترل‌ها در نظر بگیرید */
-        justify-content: center;
-        align-items: center;
-        overflow-y: auto; /* اگر تعداد ویدئوها زیاد شد */
-    }
-
-    .remote-video-container {
-        width: calc(50% - 10px); /* مثال: دو ویدئو در هر ردیف */
-        min-width: 280px; /* حداقل عرض برای هر ویدئو */
-        height: auto;
-        aspect-ratio: 16 / 9; /* حفظ نسبت تصویر */
-        max-height: calc(50vh - 50px); /* محدودیت ارتفاع */
-        background-color: #202225; /* رنگ پس‌زمینه برای ویدئوها */
-        border-radius: 8px;
-        overflow: hidden; /* برای اینکه ویدئو از کانتینر بیرون نزند */
-        position: relative; /* برای لیبل نام */
-        border: 1px solid #18191c;
-    }
-
-    .remote-video-container video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover; /* یا contain، بسته به نیاز */
-        display: block;
-    }
-     .video-label-remote {
-        position: absolute;
-        bottom: 8px;
-        left: 8px;
-        background: rgba(0, 0, 0, 0.6);
-        color: #fff;
-        padding: 3px 8px;
-        font-size: 0.8rem;
-        border-radius: 4px;
-        z-index: 1;
-    }
-
-
-    .local-video-wrapper { /* برای کنترل بهتر موقعیت ویدئوی محلی */
-        position: absolute;
-        bottom: 10px; /* فاصله از نوار کنترل */
-        right: 10px;
-        width: 200px;
-        height: 150px; /* ارتفاع ثابت */
-        border: 2px solid #7289DA; /* رنگ آبی دیسکورد */
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        z-index: 100; /* بالاتر از ویدئوهای دیگر */
-    }
-
-    #localVideo {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transform: scaleX(-1); /* حالت آینه */
-    }
-    .video-label-local {
-        position: absolute;
-        bottom: 5px;
-        left: 5px;
-        background: rgba(0,0,0,0.6);
-        color: #fff;
-        padding: 2px 5px;
-        font-size: 0.75rem;
-        border-radius: 3px;
-    }
-
-
-    #screenShareVideoContainer, #whiteboardViewContainer {
-        width: 100%;
-        height: 100%;
-        display: none; /* در ابتدا مخفی */
-        justify-content: center;
-        align-items: center;
-        background-color: #202225; /* پس‌زمینه مشابه ویدئو */
-        border-radius: 8px;
-    }
-    #screenShareVideo, #whiteboard {
-        max-width: 100%;
-        max-height: 100%;
-        border-radius: 8px;
-        display: block;
-    }
-    #whiteboard {
-        background-color: #282b30; /* یک رنگ تیره‌تر برای وایت‌برد */
-        cursor: crosshair;
-    }
-
-
-    .meeting-control-bar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 60px;
-        background-color: #202225; /* رنگ تیره‌تر برای نوار */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 0 20px;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.4);
-        z-index: 1000;
-        gap: 5px; /* فاصله کم بین دکمه‌ها */
-    }
-    .control-bar-button {
-        background-color: #2f3136; /* پس‌زمینه دکمه‌ها */
-        border: none;
-        color: #b9bbbe; /* رنگ آیکن‌ها */
-        font-size: 1.2rem; /* اندازه آیکن‌ها */
-        width: 44px; /* اندازه دکمه */
-        height: 44px;
-        border-radius: 50%; /* دکمه‌های گرد */
-        cursor: pointer;
-        transition: background-color 0.2s, color 0.2s;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .control-bar-button:hover {
-        background-color: #36393f;
-        color: #fff;
-    }
-    .control-bar-button.active {
-        background-color: #7289DA; /* رنگ آبی دیسکورد برای دکمه فعال */
-        color: #fff;
-    }
-    .control-bar-button.active:hover {
-        background-color: #5b6eae;
-    }
-    .control-bar-button.danger {
-        background-color: #f04747; /* رنگ قرمز برای خروج */
-        color: #fff;
-    }
-    .control-bar-button.danger:hover {
-        background-color: #d84040;
-    }
-
-    /* پنل‌های چت و شرکت‌کنندگان (استایل اولیه) */
-    .side-panel {
-        position: fixed;
-        top: 0; /* اگر هدر دارید، ارتفاع هدر */
-        right: -360px; /* شروع از خارج صفحه - عرض بیشتر */
-        width: 350px;
-        bottom: 70px; /* ارتفاع نوار کنترل پایین + کمی فاصله */
-        background-color: #2f3136; /* رنگ مشابه دکمه‌ها یا کمی تیره‌تر از پس‌زمینه اصلی */
-        box-shadow: -3px 0 15px rgba(0,0,0,0.3);
-        transition: right 0.3s ease-in-out;
-        z-index: 999;
-        overflow: hidden; /* برای اینکه محتوای داخلی از پنل بیرون نزند */
-        display: flex;
-        flex-direction: column;
-        border-left: 1px solid #202225;
-    }
-    .side-panel.open {
-        right: 0;
-    }
-    .side-panel-header {
-        padding: 10px 15px;
-        background-color: #202225; /* هدر تیره‌تر برای پنل‌ها */
-        color: #fff;
-        font-weight: 600;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.9rem;
-    }
-    .side-panel-header .close-panel-btn {
-        background: none;
-        border: none;
-        color: #b9bbbe;
-        font-size: 1.2rem;
-        cursor: pointer;
-    }
-    .side-panel-header .close-panel-btn:hover {
-        color: #fff;
-    }
-    .side-panel-content {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 15px;
-    }
-
-    /* استایل‌های چت و شرکت‌کنندگان در داخل پنل */
-    .chat-container, .participants-container {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    /* Chat Styles */
-    #chat-log { /* قبلا .chat-messages بود */
-        flex: 1;
-        overflow-y: auto;
-        padding-right: 5px; /* برای اسکرول بار */
-    }
-    .message {
-        margin-bottom: 12px;
-        max-width: 90%;
-        position: relative;
-        padding: 8px 12px;
-        border-radius: 18px; /* گردی بیشتر */
-        font-size: 0.88rem;
-        line-height: 1.4;
-        word-wrap: break-word;
-    }
-    .message-mine {
-        margin-left: auto;
-        background-color: #7289DA;
-        color: #fff;
-        border-radius: 18px 18px 0 18px;
-    }
-    .message-others {
-        margin-right: auto;
-        background-color: #3a3e43;
-        color: #dcddde;
-        border-radius: 18px 18px 18px 0;
-    }
-    .message-sender {
-        font-weight: 600;
-        font-size: 0.75rem;
-        margin-bottom: 3px;
-        color: #b9bbbe;
-    }
-    .message-time {
-        font-size: 0.7rem;
-        color: #72767d;
-        text-align: right; /* برای پیام‌های خودمان */
-        margin-top: 4px;
-    }
-    .message-others .message-time {
-        text-align: left;
-    }
-
-    #chat-form .input-group {
-        border-top: 1px solid #202225;
-        padding-top: 10px;
-    }
-    #chat-message-input {
-        background-color: #40444b;
-        border: 1px solid #202225;
-        color: #dcddde;
-        border-radius: 20px 0 0 20px !important; /* گردی برای ورودی */
-        padding-left: 15px;
-        font-size: 0.9rem;
-    }
-    #chat-message-input::placeholder {
-        color: #72767d;
-    }
-    #chat-message-input:focus {
-        border-color: #7289DA;
-        box-shadow: none;
-    }
-    #chat-message-submit {
-        background-color: #40444b;
-        border: 1px solid #202225;
-        border-left: none;
-        color: #7289DA;
-        border-radius: 0 20px 20px 0 !important; /* گردی برای دکمه */
-    }
-     #chat-message-submit:hover {
-        color: #fff;
-        background-color: #7289DA;
-    }
-
-
-    /* Participants Styles */
-    #user-list { /* قبلا .participants-list بود */
-       /* flex-grow: 1;
-        overflow-y: auto; */
-    }
-    .participant {
-        display: flex;
-        align-items: center;
-        padding: 8px 0; /* پدینگ عمودی */
-        border-bottom: 1px solid #3a3e43;
-    }
-     .participant:last-child {
-        border-bottom: none;
-    }
-    .participant-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background-color: #7289DA;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        margin-right: 10px;
-        font-size: 0.9rem;
-    }
-    .participant-name {
-        font-size: 0.9rem;
-        color: #dcddde;
-    }
-
-
-    /* Whiteboard Toolbar */
-    #whiteboardToolbarContainer {
-        position: absolute;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: rgba(47, 49, 54, 0.9); /* #2f3136 with transparency */
-        padding: 8px 12px;
-        border-radius: 25px; /* کاملا گرد */
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        z-index: 100;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-    #whiteboardToolbarContainer .btn,
-    #whiteboardToolbarContainer input[type="color"],
-    #whiteboardToolbarContainer input[type="range"] {
-        background-color: #40444b;
-        color: #b9bbbe;
-        border: 1px solid #202225;
-        height: 32px; /* ارتفاع یکسان برای همه عناصر */
-        padding: 0 10px; /* پدینگ افقی برای دکمه‌ها */
-        border-radius: 16px; /* گرد کردن دکمه‌ها */
-    }
-    #whiteboardToolbarContainer .btn i {
-        vertical-align: middle;
-    }
-    #whiteboardToolbarContainer input[type="color"] {
-        width: 32px; /* مربع کوچک برای رنگ */
-        padding: 2px; /* پدینگ داخلی برای رنگ */
-    }
-     #whiteboardToolbarContainer input[type="range"] {
-        width: 80px; /* عرض برای اسلایدر */
-        padding: 0;
-    }
-    #whiteboardToolbarContainer .btn:hover {
-        background-color: #7289DA;
-        color: #fff;
-    }
-
-</style>
+<link rel="stylesheet" href="{% static 'css/meeting_room_theme.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="meeting-main-content">
     <div id="videocall-container">
-        <div id="remoteVideos">
-            </div>
+        <div id="remoteVideos"></div>
         <div class="local-video-wrapper">
             <video id="localVideo" autoplay playsinline muted></video>
             <div class="video-label-local">You</div>
         </div>
     </div>
-
-    <div id="screenShareVideoContainer">
+    <div id="screenShareVideoContainer" style="display: none;">
         <video id="screenShareVideo" autoplay playsinline></video>
     </div>
-
-    <div id="whiteboardViewContainer">
+    <div id="whiteboardViewContainer" style="display: none;">
         <div id="whiteboardToolbarContainer">
-            <button id="pencilTool" class="btn btn-sm" title="Pencil"><i class="fas fa-pencil-alt"></i></button>
+            <button id="pencilTool" class="btn btn-sm active" title="Pencil"><i class="fas fa-pencil-alt"></i></button>
             <button id="eraserTool" class="btn btn-sm" title="Eraser"><i class="fas fa-eraser"></i></button>
             <input type="color" id="colorPicker" value="#FFFFFF" title="Color Picker">
             <input type="range" id="brushSize" min="1" max="20" value="5" title="Brush Size">
@@ -409,7 +31,6 @@
         <canvas id="whiteboard"></canvas>
     </div>
 </div>
-
 <div class="meeting-control-bar">
     <button id="toggleMicBtn" class="control-bar-button" title="Toggle Microphone"><i class="fas fa-microphone"></i></button>
     <button id="toggleCameraBtn" class="control-bar-button" title="Toggle Camera"><i class="fas fa-video"></i></button>
@@ -420,47 +41,55 @@
     <button id="toggleParticipantsBtn" class="control-bar-button" title="Toggle Participants"><i class="fas fa-users"></i></button>
     <button id="leaveMeetingBtn" class="control-bar-button danger" title="Leave Meeting"><i class="fas fa-phone-slash"></i></button>
 </div>
-
 <div id="chatPanel" class="side-panel">
     <div class="side-panel-header">
         <span><i class="fas fa-comments me-2"></i> Group Chat</span>
         <button id="closeChatPanelBtn" class="close-panel-btn">&times;</button>
     </div>
     <div class="side-panel-content chat-container">
-        <div id="chat-log">
-            </div>
-        <form id="chat-form" class="mt-auto"> <div class="input-group">
+        <div id="chat-log"></div>
+        <form id="chat-form" class="mt-auto">
+            <div class="input-group">
                 <input type="text" id="chat-message-input" class="form-control" placeholder="Type a message..." autocomplete="off">
                 <button type="submit" id="chat-message-submit" class="btn"><i class="fas fa-paper-plane"></i></button>
             </div>
         </form>
     </div>
 </div>
-
 <div id="participantsPanel" class="side-panel">
-     <div class="side-panel-header">
+    <div class="side-panel-header">
         <span><i class="fas fa-users me-2"></i> Participants (<span id="participant-count">0</span>)</span>
         <button id="closeParticipantsPanelBtn" class="close-panel-btn">&times;</button>
     </div>
     <div class="side-panel-content participants-container">
-        <div id="user-list">
-            </div>
+        <div id="user-list"></div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // --- JS Variables from Django template ---
+    const reservationId = "{{ reservation.id }}";
+    const currentUsername = "{{ request.user.username }}";
+    const currentUserId = "{{ request.user.id }}";
+    const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
+</script>
+
+<script type="module">
+    // Import کردن توابع init از فایل‌های جداگانه
+    import { initVideoCallFeatures } from '{% static "js/videocall_features.js" %}';
+    import { initScreenShareFeatures } from '{% static "js/screenshare_features.js" %}';
+    import { initWhiteboardFeatures } from '{% static "js/whiteboard_features.js" %}';
+
     // --- DOM Elements ---
     const videocallView = document.getElementById('videocall-container');
     const screenShareView = document.getElementById('screenShareVideoContainer');
-    const screenShareVideoEl = document.getElementById('screenShareVideo');
     const whiteboardView = document.getElementById('whiteboardViewContainer');
-    const whiteboardCanvas = document.getElementById('whiteboard');
-
     const localVideoEl = document.getElementById('localVideo');
     const remoteVideosContainer = document.getElementById('remoteVideos');
+    const screenShareVideoEl = document.getElementById('screenShareVideo');
+    const whiteboardCanvas = document.getElementById('whiteboard');
 
     const toggleMicBtn = document.getElementById('toggleMicBtn');
     const toggleCameraBtn = document.getElementById('toggleCameraBtn');
@@ -475,27 +104,82 @@
     const closeChatPanelBtn = document.getElementById('closeChatPanelBtn');
     const participantsPanel = document.getElementById('participantsPanel');
     const closeParticipantsPanelBtn = document.getElementById('closeParticipantsPanelBtn');
-
+    
     // --- App State ---
-    let currentView = 'video'; // 'video', 'screenshare', 'whiteboard'
+    let currentView = 'video';
     let isMicEnabled = true;
     let isCameraEnabled = true;
     let isScreenSharing = false;
-    let isWhiteboardActive = false; // To track if whiteboard *should* be active, not just displayed
+    let screenStream = null;
+    let isWhiteboardActive = false;
 
-    // --- JS Variables from Django template ---
-    const reservationId = "{{ reservation.id }}";
-    const currentUsername = "{{ request.user.username }}";
-    const currentUserId = "{{ request.user.id }}";
-
-    // --- WebRTC, WebSocket, Chat, Whiteboard Variables (from your original script) ---
+    // --- WebRTC, WebSocket, Chat Variables ---
     let chatSocket = null;
     let localStream = null;
-    let screenStream = null;
     let peerConnections = {};
-    let whiteboardHistory = []; // For redrawing whiteboard on resize or if data comes before canvas is ready
+    let pendingIceCandidatesForPeer = {};
     const participants = new Map();
-    participants.set(currentUserId, currentUsername); // Add current user
+    participants.set(currentUserId, currentUsername);
+
+    // --- Handler Instances from Modules ---
+    let videoCallHandler = null;
+    let screenShareHandler = null;
+    let whiteboardHandler = null;
+    
+    // --- View Management ---
+    function showView(viewName) {
+        currentView = viewName;
+        globalMeetingContext.currentView = viewName;
+
+        videocallView.style.display = 'none';
+        screenShareView.style.display = 'none';
+        whiteboardView.style.display = 'none';
+        toggleWhiteboardBtn.classList.remove('active');
+
+        if (viewName === 'video') {
+            videocallView.style.display = 'flex';
+        } else if (viewName === 'screenshare') {
+            screenShareView.style.display = 'flex';
+        } else if (viewName === 'whiteboard') {
+            whiteboardView.style.display = 'flex';
+            toggleWhiteboardBtn.classList.add('active');
+            // کمی تاخیر برای اطمینان از رندر شدن کانوس
+            setTimeout(() => {
+                if (whiteboardHandler && typeof whiteboardHandler.resizeCanvas === 'function') {
+                    whiteboardHandler.resizeCanvas();
+                    whiteboardHandler.redrawHistory();
+                }
+            }, 100);
+        }
+    }
+
+    // --- Global Context for Modules ---
+    const globalMeetingContext = {
+        // DOM Elements
+        localVideoEl, remoteVideosContainer, screenShareVideoEl, whiteboardCanvas, whiteboardView,
+        startShareBtn, stopShareBtn, toggleWhiteboardBtn, videocallView, screenShareView,
+        // State
+        get isScreenSharing() { return isScreenSharing; },
+        set isScreenSharing(value) { isScreenSharing = value; },
+        get screenStream() { return screenStream; },
+        set screenStream(value) { screenStream = value; },
+        get isWhiteboardActive() { return isWhiteboardActive; },
+        set isWhiteboardActive(value) { isWhiteboardActive = value; },
+        get currentView() { return currentView; },
+        set currentView(value) { currentView = value; },
+        get localStream() { return localStream; },
+        set localStream(value) { localStream = value; },
+        peerConnections, pendingIceCandidatesForPeer, participants,
+        // Config/Utils
+        get chatSocket() { return chatSocket; },
+        set chatSocket(value) { chatSocket = value; },
+        currentUserId, currentUsername, reservationId, ICE_SERVERS,
+        showView,
+        setWhiteboardActiveState: (isActive) => { 
+            isWhiteboardActive = isActive; 
+            globalMeetingContext.isWhiteboardActive = isActive;
+        }
+    };
 
     // --- Utility Functions ---
     function updateParticipantDisplay() {
@@ -503,7 +187,7 @@
         const participantCountEl = document.getElementById('participant-count');
         if (!userListEl || !participantCountEl) return;
 
-        userListEl.innerHTML = ''; // Clear existing list
+        userListEl.innerHTML = '';
         participants.forEach((username, id) => {
             const isCurrentUser = id === currentUserId;
             const participantElement = document.createElement('div');
@@ -517,30 +201,7 @@
         participantCountEl.textContent = participants.size;
     }
 
-
-    // --- View Management ---
-    function showView(viewName) {
-        currentView = viewName;
-        videocallView.style.display = 'none';
-        screenShareView.style.display = 'none';
-        whiteboardView.style.display = 'none';
-
-        toggleWhiteboardBtn.classList.remove('active'); // Reset whiteboard button
-
-        if (viewName === 'video') {
-            videocallView.style.display = 'flex'; // Assuming flex for centering content
-        } else if (viewName === 'screenshare') {
-            screenShareView.style.display = 'flex';
-        } else if (viewName === 'whiteboard') {
-            whiteboardView.style.display = 'flex';
-            toggleWhiteboardBtn.classList.add('active');
-            // Ensure whiteboard canvas is resized and redrawn if needed
-            if (window.resizeWhiteboardCanvas) window.resizeWhiteboardCanvas();
-            if (window.redrawWhiteboardHistory) window.redrawWhiteboardHistory();
-        }
-    }
-
-    // --- Event Listeners for Controls ---
+    // --- Event Listeners for Main Controls ---
     toggleMicBtn.addEventListener('click', () => {
         if (!localStream) return;
         isMicEnabled = !isMicEnabled;
@@ -555,97 +216,26 @@
         localStream.getVideoTracks().forEach(track => track.enabled = isCameraEnabled);
         toggleCameraBtn.innerHTML = isCameraEnabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
         toggleCameraBtn.classList.toggle('active', isCameraEnabled);
-        localVideoEl.style.display = isCameraEnabled ? 'block' : 'none'; // Hide local video element if camera off
+        localVideoEl.style.display = isCameraEnabled ? 'block' : 'none';
     });
-
-    startShareBtn.addEventListener('click', async () => {
-        if (isScreenSharing) return;
-        try {
-            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: {echoCancellation: true, noiseSuppression: true} });
-            isScreenSharing = true;
-            screenShareVideoEl.srcObject = screenStream;
-            showView('screenshare');
-            startShareBtn.style.display = 'none';
-            stopShareBtn.style.display = 'inline-flex'; // Assuming buttons are flex items
-            toggleWhiteboardBtn.classList.remove('active');
-            isWhiteboardActive = false;
-
-            // Send screen stream to peers
-            Object.values(peerConnections).forEach(pc => {
-                const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-                if (sender) {
-                    sender.replaceTrack(screenStream.getVideoTracks()[0]);
-                } else { // If no video sender exists, add one (less common for established calls)
-                     screenStream.getTracks().forEach(track => pc.addTrack(track, screenStream));
-                }
-            });
-
-
-            screenStream.getVideoTracks()[0].addEventListener('ended', () => {
-                stopScreenSharing(false); // User stopped via browser UI, don't send WebSocket message if already handled
-            });
-
-             if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                chatSocket.send(JSON.stringify({ type: 'start_screen_share', user_id: currentUserId, username: currentUsername }));
-            }
-
-        } catch (err) {
-            console.error("Error starting screen share:", err);
-            isScreenSharing = false;
-        }
-    });
-
-    function stopScreenSharing(notifyServer = true) {
-        if (!isScreenSharing && !screenStream) return;
-
-        // Revert video tracks in peer connections to local camera stream (if available)
-         if (localStream && localStream.getVideoTracks().length > 0) {
-            const cameraTrack = localStream.getVideoTracks()[0];
-            Object.values(peerConnections).forEach(pc => {
-                const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-                if (sender) {
-                    sender.replaceTrack(cameraTrack).catch(e => console.error("Error replacing track back to camera:", e));
-                }
-            });
-        } else { // If no local camera, or it was off, tell peers to expect no video or handle accordingly
-            Object.values(peerConnections).forEach(pc => {
-                const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-                if (sender) {
-                     // pc.removeTrack(sender); // Or replace with a null track / send a 'video_stopped' signal
-                }
-            });
-        }
-
-
-        screenStream.getTracks().forEach(track => track.stop());
-        screenStream = null;
-        isScreenSharing = false;
-        screenShareVideoEl.srcObject = null;
-        showView('video'); // Or last active view if you track that
-        startShareBtn.style.display = 'inline-flex';
-        stopShareBtn.style.display = 'none';
-
-        if (notifyServer && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-            chatSocket.send(JSON.stringify({ type: 'stop_screen_share', user_id: currentUserId, username: currentUsername }));
-        }
-    }
-    stopShareBtn.addEventListener('click', () => stopScreenSharing(true));
-
 
     toggleWhiteboardBtn.addEventListener('click', () => {
-        isWhiteboardActive = !isWhiteboardActive; // Toggle the desired state
+        isWhiteboardActive = !isWhiteboardActive;
+        globalMeetingContext.isWhiteboardActive = isWhiteboardActive;
+
         if (isWhiteboardActive) {
-            if (isScreenSharing) stopScreenSharing(); // Stop screen share if active
+            if (screenShareHandler && screenShareHandler.isCurrentlySharing()) {
+                screenShareHandler.stopSharing(true);
+            }
             showView('whiteboard');
         } else {
-            showView('video'); // Revert to video view if whiteboard is turned off
+            showView('video');
         }
-        // The 'active' class is handled by showView for this button
     });
 
     toggleChatBtn.addEventListener('click', () => {
         chatPanel.classList.toggle('open');
-        participantsPanel.classList.remove('open'); // Close other panel
+        participantsPanel.classList.remove('open');
         toggleChatBtn.classList.toggle('active');
         toggleParticipantsBtn.classList.remove('active');
     });
@@ -656,7 +246,7 @@
 
     toggleParticipantsBtn.addEventListener('click', () => {
         participantsPanel.classList.toggle('open');
-        chatPanel.classList.remove('open'); // Close other panel
+        chatPanel.classList.remove('open');
         toggleParticipantsBtn.classList.toggle('active');
         toggleChatBtn.classList.remove('active');
     });
@@ -664,204 +254,27 @@
         participantsPanel.classList.remove('open');
         toggleParticipantsBtn.classList.remove('active');
     });
-
+    
     leaveMeetingBtn.addEventListener('click', () => {
         if (confirm('Are you sure you want to leave this meeting?')) {
-            // Clean up: stop streams, close connections, notify server
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
                 localStream = null;
             }
-            if (screenStream) {
-                stopScreenSharing(false); // Stop without notifying since we are leaving
+            if (screenShareHandler && screenShareHandler.isCurrentlySharing()) {
+                screenShareHandler.stopSharing(false);
             }
             Object.values(peerConnections).forEach(pc => pc.close());
             peerConnections = {};
 
             if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                // chatSocket.send(JSON.stringify({ type: 'user_leave', user_id: currentUserId, username: currentUsername })); // Server should handle on disconnect
                 chatSocket.close();
             }
-            window.location.href = "{% url 'home' %}"; // Redirect
+            window.location.href = "{% url 'home' %}";
         }
     });
 
-
-    // --- Initial Setup ---
-    document.addEventListener('DOMContentLoaded', async () => {
-        showView('video'); // Set initial view
-        updateParticipantDisplay(); // Initial display of self
-
-        // Initialize WebSocket
-        initializeWebSocket(); // Defined further down
-
-        // Attempt to get local media stream (camera and mic)
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({
-                video: {width: {ideal: 640}, height: {ideal: 360}}, // Request a reasonable resolution
-                audio: {echoCancellation: true, noiseSuppression: true}
-            });
-            localVideoEl.srcObject = localStream;
-            toggleMicBtn.classList.add('active'); // Assuming mic is on by default
-            toggleCameraBtn.classList.add('active'); // Assuming camera is on by default
-        } catch (err) {
-            console.error("Error accessing media devices:", err);
-            alert("Could not access camera or microphone. Some features will be disabled.");
-            isMicEnabled = false;
-            isCameraEnabled = false;
-            toggleMicBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
-            toggleCameraBtn.innerHTML = '<i class="fas fa-video-slash"></i>';
-            toggleMicBtn.classList.remove('active');
-            toggleCameraBtn.classList.remove('active');
-        }
-
-        initializeWhiteboard(); // Defined further down
-        // resizeWhiteboardCanvas(); // Call after DOM is ready and whiteboard is potentially visible
-    });
-
-
-    // --- WebSocket, Chat, WebRTC, Whiteboard functions from your original script ---
-    // --- These need to be adapted carefully ---
-
-    function initializeWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        // IMPORTANT: Make sure your Django routing for WebRTC signals uses a different path
-        // than the chat WebSocket if they are handled by different consumers or logic.
-        // For this example, I'm assuming a single 'chat' WebSocket endpoint handles all signals.
-        // If you have a separate /ws/webrtc/ endpoint, you'd need another WebSocket connection.
-        const socketUrl = `${protocol}${window.location.host}/ws/chat/${reservationId}/`; // Or your combined endpoint
-
-        chatSocket = new WebSocket(socketUrl);
-
-        chatSocket.onopen = () => {
-            console.log("WebSocket connected");
-            // Optionally, send a 'user_join' or 'fetch_initial_state' message
-            // chatSocket.send(JSON.stringify({ type: 'user_join', user_id: currentUserId, username: currentUsername }));
-        };
-
-        chatSocket.onmessage = handleWebSocketMessage; // Needs to be defined
-
-        chatSocket.onclose = () => {
-            console.log("WebSocket disconnected");
-            // Handle reconnection logic or UI updates if needed
-        };
-
-        chatSocket.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-    }
-
-    function handleWebSocketMessage(event) {
-        const data = JSON.parse(event.data);
-        console.log("WS Message Received:", data);
-
-        switch (data.type) {
-            case 'chat_message':
-                displayChatMessage(data);
-                break;
-            case 'user_join':
-                if (data.user_id !== currentUserId) {
-                    participants.set(data.user_id, data.username);
-                    updateParticipantDisplay();
-                    console.log(`${data.username} joined. Creating offer.`);
-                    // Create peer connection and offer for the new user if localStream is ready
-                    if (localStream) {
-                        const pc = createPeerConnection(data.user_id, data.username);
-                        if (pc) {
-                             pc.createOffer()
-                                .then(offer => pc.setLocalDescription(offer))
-                                .then(() => {
-                                    chatSocket.send(JSON.stringify({
-                                        type: 'offer',
-                                        offer: pc.localDescription,
-                                        recipient_id: data.user_id,
-                                        sender_id: currentUserId
-                                    }));
-                                })
-                                .catch(e => console.error("Offer creation error:", e));
-                        }
-                    }
-                    // Send whiteboard history if whiteboard is active
-                    if (isWhiteboardActive && whiteboardHistory.length > 0) {
-                        sendWhiteboardDataToUser(data.user_id, whiteboardHistory);
-                    }
-                }
-                break;
-            case 'user_leave':
-                if (data.user_id !== currentUserId) {
-                    participants.delete(data.user_id);
-                    updateParticipantDisplay();
-                    if (peerConnections[data.user_id]) {
-                        peerConnections[data.user_id].close();
-                        delete peerConnections[data.user_id];
-                    }
-                    const remoteVideoContainerEl = document.getElementById(`remote-video-container-${data.user_id}`);
-                    if (remoteVideoContainerEl) remoteVideoContainerEl.remove();
-                }
-                break;
-            case 'offer': // Received an offer from a peer
-                if (data.recipient_id === currentUserId) {
-                    handleOffer(data.offer, data.sender_id);
-                }
-                break;
-            case 'answer': // Received an answer from a peer
-                 if (data.recipient_id === currentUserId) {
-                    handleAnswer(data.answer, data.sender_id);
-                }
-                break;
-            case 'ice_candidate': // Received an ICE candidate from a peer
-                 if (data.recipient_id === currentUserId) {
-                    handleIceCandidate(data.candidate, data.sender_id);
-                }
-                break;
-            case 'whiteboard_data':
-                if (data.sender_id !== currentUserId && window.handleWhiteboardDrawEvent) {
-                    window.handleWhiteboardDrawEvent(data.data);
-                }
-                break;
-            case 'whiteboard_clear':
-                 if (data.sender_id !== currentUserId && window.handleWhiteboardClearEvent) {
-                    window.handleWhiteboardClearEvent();
-                }
-                break;
-            case 'whiteboard_history': // Receiving history from another user (e.g., late joiner)
-                if (data.recipient_id === currentUserId && window.applyWhiteboardHistory) {
-                    window.applyWhiteboardHistory(data.history);
-                }
-                break;
-             case 'start_screen_share':
-                if (data.user_id !== currentUserId) {
-                    console.log(`${data.username} started screen sharing.`);
-                    // UI should react to this, e.g., show the shared screen stream when it arrives via WebRTC
-                    // This usually means the 'track' event on the peer connection for this user will fire with a video track
-                    // which should be for screen sharing. You might need a flag or specific handling for screen share tracks.
-                    // For now, we assume ontrack event will handle displaying the video.
-                    // You might want to switch the main view to this user's screen.
-                    // This part requires careful integration with your WebRTC ontrack handling.
-                }
-                break;
-            case 'stop_screen_share':
-                if (data.user_id !== currentUserId) {
-                    console.log(`${data.username} stopped screen sharing.`);
-                    // If you were displaying this user's screen share, switch back to their video or a gallery view.
-                    // The WebRTC 'track' event might again signal a change back to a camera track, or a track might be removed.
-                }
-                break;
-            // Add other message types as needed
-        }
-    }
-    function sendWhiteboardDataToUser(recipientId, history) {
-        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-            chatSocket.send(JSON.stringify({
-                type: 'whiteboard_history',
-                recipient_id: recipientId,
-                history: history,
-                sender_id: currentUserId
-            }));
-        }
-    }
-
-    // Chat Functions
+    // --- Chat Functions ---
     const chatLogEl = document.getElementById('chat-log');
     const chatMessageInputEl = document.getElementById('chat-message-input');
     const chatFormEl = document.getElementById('chat-form');
@@ -879,7 +292,7 @@
 
         const contentElement = document.createElement('div');
         contentElement.classList.add('message-content');
-        contentElement.textContent = data.message; // Sanitize this if it can contain HTML
+        contentElement.textContent = data.message;
         messageElement.appendChild(contentElement);
 
         const timeElement = document.createElement('div');
@@ -898,317 +311,170 @@
             chatSocket.send(JSON.stringify({
                 type: 'chat_message',
                 message: message,
-                user_id: currentUserId, // Send user_id for backend to identify sender
-                username: currentUsername, // Send username for display on other clients
-                timestamp: new Date().toISOString() // Client-side timestamp for immediate display
+                user_id: currentUserId,
+                username: currentUsername,
+                timestamp: new Date().toISOString()
             }));
-            // Display own message immediately (optional, server will echo it back too)
-            // displayChatMessage({ message: message, username: currentUsername, user_id: currentUserId, timestamp: new Date().toISOString() });
             chatMessageInputEl.value = '';
         }
     });
 
-    // --- WebRTC Functions ---
-    const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
-    let pendingIceCandidatesForPeer = {}; // Store candidates if PC not ready
+    // --- WebSocket Initialization & Handling ---
+    function initializeWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const socketUrl = `${protocol}${window.location.host}/ws/chat/${reservationId}/`;
+        
+        chatSocket = new WebSocket(socketUrl);
+        globalMeetingContext.chatSocket = chatSocket;
 
-    function createPeerConnection(peerId, peerUsername) {
-        if (peerConnections[peerId]) {
-            console.warn(`Peer connection for ${peerId} already exists.`);
-            return peerConnections[peerId];
-        }
-        console.log(`Creating new peer connection for: ${peerId} (${peerUsername})`);
-        const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-        peerConnections[peerId] = pc;
-
-        pc.onicecandidate = (event) => {
-            if (event.candidate && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                chatSocket.send(JSON.stringify({
-                    type: 'ice_candidate',
-                    candidate: event.candidate,
-                    recipient_id: peerId,
-                    sender_id: currentUserId
-                }));
-            }
+        chatSocket.onopen = () => {
+            console.log("WebSocket connected");
+            // Initialize modules after WebSocket connection
+            videoCallHandler = initVideoCallFeatures(globalMeetingContext);
+            screenShareHandler = initScreenShareFeatures(globalMeetingContext);
+            whiteboardHandler = initWhiteboardFeatures(globalMeetingContext);
         };
 
-        pc.ontrack = (event) => {
-            console.log(`Track received from ${peerId}`, event.track, event.streams);
-            let remoteVideoContainerEl = document.getElementById(`remote-video-container-${peerId}`);
-            if (!remoteVideoContainerEl) {
-                remoteVideoContainerEl = document.createElement('div');
-                remoteVideoContainerEl.className = 'remote-video-container';
-                remoteVideoContainerEl.id = `remote-video-container-${peerId}`;
-
-                const videoEl = document.createElement('video');
-                videoEl.id = `remote-video-${peerId}`;
-                videoEl.autoplay = true;
-                videoEl.playsInline = true;
-
-                const labelEl = document.createElement('div');
-                labelEl.className = 'video-label-remote';
-                labelEl.textContent = peerUsername || 'Remote User';
-
-                remoteVideoContainerEl.appendChild(videoEl);
-                remoteVideoContainerEl.appendChild(labelEl);
-                remoteVideosContainer.appendChild(remoteVideoContainerEl);
-            }
-            const videoElement = document.getElementById(`remote-video-${peerId}`);
-            if (event.streams && event.streams[0]) {
-                videoElement.srcObject = event.streams[0];
-            } else { // Fallback for browsers that don't provide streams directly on track event
-                let inboundStream = new MediaStream();
-                inboundStream.addTrack(event.track);
-                videoElement.srcObject = inboundStream;
-            }
-        };
-        pc.oniceconnectionstatechange = () => {
-            console.log(`ICE connection state for ${peerId}: ${pc.iceConnectionState}`);
-             if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'closed') {
-                // Handle cleanup for this peer connection
-                const remoteVideoContainerEl = document.getElementById(`remote-video-container-${peerId}`);
-                if (remoteVideoContainerEl) remoteVideoContainerEl.remove();
-                delete peerConnections[peerId];
-                // Potentially remove from participants list if they also disconnected from WebSocket
-            }
-        };
-
-
-        // Add local stream tracks to the new peer connection
-        if (localStream) {
-            localStream.getTracks().forEach(track => {
-                try {
-                    pc.addTrack(track, localStream);
-                } catch (e) { console.error("Error adding track to PC:", e); }
-            });
-        } else {
-            console.warn("Local stream not available when creating peer connection for", peerId);
-        }
-        // Process any pending ICE candidates for this peer
-        if (pendingIceCandidatesForPeer[peerId]) {
-            pendingIceCandidatesForPeer[peerId].forEach(candidate => {
-                pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error("Error adding pending ICE:", e));
-            });
-            delete pendingIceCandidatesForPeer[peerId];
-        }
-
-
-        return pc;
+        chatSocket.onmessage = handleWebSocketMessage;
+        chatSocket.onclose = () => console.log("WebSocket disconnected");
+        chatSocket.onerror = (error) => console.error("WebSocket error:", error);
     }
 
-    async function handleOffer(offer, senderId) {
-        const senderUsername = participants.get(senderId) || "A user";
-        console.log(`Received offer from ${senderId} (${senderUsername})`);
-        const pc = peerConnections[senderId] || createPeerConnection(senderId, senderUsername);
-        if (!pc) return;
+    function handleWebSocketMessage(event) {
+        const data = JSON.parse(event.data);
+        console.log("WS Message Received:", data);
+
+        switch (data.type) {
+            case 'chat_message':
+                displayChatMessage(data);
+                break;
+            case 'user_join':
+                if (data.user_id !== currentUserId) {
+                    participants.set(data.user_id, data.username);
+                    updateParticipantDisplay();
+                    console.log(`${data.username} joined. Creating offer.`);
+                    if (localStream && videoCallHandler) {
+                        const pc = videoCallHandler.createPeerConnection(data.user_id, data.username);
+                        if (pc) {
+                            pc.createOffer()
+                                .then(offer => pc.setLocalDescription(offer))
+                                .then(() => {
+                                    chatSocket.send(JSON.stringify({
+                                        type: 'offer',
+                                        offer: pc.localDescription,
+                                        recipient_id: data.user_id,
+                                        sender_id: currentUserId
+                                    }));
+                                })
+                                .catch(e => console.error("Offer creation error:", e));
+                        }
+                    }
+                    if (isWhiteboardActive && whiteboardHandler && whiteboardHandler.getHistory && whiteboardHandler.getHistory().length > 0) {
+                        chatSocket.send(JSON.stringify({
+                            type: 'whiteboard_history',
+                            history: whiteboardHandler.getHistory(),
+                            recipient_id: data.user_id,
+                            sender_id: currentUserId
+                        }));
+                    }
+                }
+                break;
+            case 'user_leave':
+                if (data.user_id !== currentUserId) {
+                    participants.delete(data.user_id);
+                    updateParticipantDisplay();
+                    if (peerConnections[data.user_id]) {
+                        peerConnections[data.user_id].close();
+                        delete peerConnections[data.user_id];
+                    }
+                    const remoteVideoContainerEl = document.getElementById(`remote-video-container-${data.user_id}`);
+                    if (remoteVideoContainerEl) remoteVideoContainerEl.remove();
+                }
+                break;
+            case 'offer':
+                if (data.recipient_id === currentUserId && videoCallHandler) {
+                    videoCallHandler.handleOffer(data.offer, data.sender_id);
+                }
+                break;
+            case 'answer':
+                if (data.recipient_id === currentUserId && videoCallHandler) {
+                    videoCallHandler.handleAnswer(data.answer, data.sender_id);
+                }
+                break;
+            case 'ice_candidate':
+                if (data.recipient_id === currentUserId && videoCallHandler) {
+                    videoCallHandler.handleIceCandidate(data.candidate, data.sender_id);
+                }
+                break;
+            case 'whiteboard_data':
+                if (data.sender_id !== currentUserId && whiteboardHandler) {
+                    whiteboardHandler.handleDrawEvent(data.data);
+                }
+                break;
+            case 'whiteboard_clear':
+                if (data.sender_id !== currentUserId && whiteboardHandler) {
+                    whiteboardHandler.handleClearEvent();
+                }
+                break;
+            case 'whiteboard_history':
+                if (data.recipient_id === currentUserId && whiteboardHandler) {
+                    whiteboardHandler.applyHistory(data.history);
+                }
+                break;
+            case 'start_screen_share':
+                if (data.user_id !== currentUserId) {
+                    console.log(`${data.username} started screen sharing.`);
+                }
+                break;
+            case 'stop_screen_share':
+                if (data.user_id !== currentUserId) {
+                    console.log(`${data.username} stopped screen sharing.`);
+                }
+                break;
+            case 'fetch_messages': // برای مدیریت پیام‌های قبلی دریافت شده از سرور
+                if (data.messages && Array.isArray(data.messages)) {
+                    chatLogEl.innerHTML = ''; // پاک کردن پیام‌های قبلی (اگر وجود داشته باشد) قبل از بارگذاری مجدد
+                    data.messages.forEach(msg => {
+                        // Consumer پیام‌ها را با کلید 'userId' ارسال می‌کند،
+                        // اما تابع displayChatMessage منتظر 'user_id' است.
+                        displayChatMessage({
+                            user_id: msg.userId, // تبدیل کلید
+                            username: msg.username,
+                            message: msg.message,
+                            timestamp: msg.timestamp
+                        });
+                    });
+                }
+                break;
+        }
+    }
+    
+    // --- Initial Setup ---
+    document.addEventListener('DOMContentLoaded', async () => {
+        showView('video');
+        updateParticipantDisplay();
+        initializeWebSocket();
 
         try {
-            await pc.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                chatSocket.send(JSON.stringify({
-                    type: 'answer',
-                    answer: pc.localDescription,
-                    recipient_id: senderId,
-                    sender_id: currentUserId
-                }));
-            }
-        } catch (e) {
-            console.error("Error handling offer:", e);
-        }
-    }
-
-    async function handleAnswer(answer, senderId) {
-        console.log(`Received answer from ${senderId}`);
-        const pc = peerConnections[senderId];
-        if (pc) {
-            try {
-                await pc.setRemoteDescription(new RTCSessionDescription(answer));
-            } catch (e) {
-                console.error("Error handling answer:", e);
-            }
-        }
-    }
-
-    async function handleIceCandidate(candidate, senderId) {
-        // console.log(`Received ICE candidate from ${senderId}`);
-        const pc = peerConnections[senderId];
-        if (pc) {
-            if (pc.remoteDescription) { // Only add candidate if remote description is set
-                try {
-                    await pc.addIceCandidate(new RTCIceCandidate(candidate));
-                } catch (e) {
-                    console.error("Error adding received ICE candidate:", e);
-                }
-            } else { // Buffer candidate if remote description isn't set yet
-                if (!pendingIceCandidatesForPeer[senderId]) {
-                    pendingIceCandidatesForPeer[senderId] = [];
-                }
-                pendingIceCandidatesForPeer[senderId].push(candidate);
-                console.log(`Buffered ICE candidate from ${senderId} because remote description is not set.`);
-            }
-        } else {
-             console.warn(`No peer connection for ${senderId} to add ICE candidate.`);
-              if (!pendingIceCandidatesForPeer[senderId]) {
-                  pendingIceCandidatesForPeer[senderId] = [];
-              }
-              pendingIceCandidatesForPeer[senderId].push(candidate);
-        }
-    }
-
-
-    // --- Whiteboard Functions ---
-    function initializeWhiteboard() {
-        const ctx = whiteboardCanvas.getContext('2d');
-        const colorPicker = document.getElementById('colorPicker');
-        const brushSizeSlider = document.getElementById('brushSize');
-        const pencilToolBtn = document.getElementById('pencilTool');
-        const eraserToolBtn = document.getElementById('eraserTool');
-        const clearBtn = document.getElementById('clearBoardBtn');
-        const saveBtn = document.getElementById('saveBoardBtn');
-
-        let isDrawing = false;
-        let lastX = 0;
-        let lastY = 0;
-        let currentTool = 'pencil'; // 'pencil' or 'eraser'
-        let strokeColor = colorPicker.value || '#FFFFFF'; // Default to white for dark bg
-        let lineWidth = brushSizeSlider.value || 5;
-
-        function getRelativeCoords(event) {
-            const rect = whiteboardCanvas.getBoundingClientRect();
-            const x = (event.clientX || (event.touches && event.touches[0].clientX)) - rect.left;
-            const y = (event.clientY || (event.touches && event.touches[0].clientY)) - rect.top;
-            return { x, y };
-        }
-
-        function startDraw(event) {
-            event.preventDefault();
-            if (!isWhiteboardActive && currentView !== 'whiteboard') return; // Draw only if whiteboard is active view
-            isDrawing = true;
-            const { x, y } = getRelativeCoords(event);
-            [lastX, lastY] = [x, y];
-            // No need to ctx.beginPath() here, it's better before drawing each segment
-        }
-
-        function draw(event) {
-            event.preventDefault();
-            if (!isDrawing || (!isWhiteboardActive && currentView !== 'whiteboard')) return;
-
-            const { x, y } = getRelativeCoords(event);
-            ctx.beginPath(); // Start a new path for each segment
-            ctx.moveTo(lastX, lastY);
-            ctx.lineTo(x, y);
-            ctx.strokeStyle = currentTool === 'pencil' ? strokeColor : whiteboardCanvas.style.backgroundColor || '#282b30';
-            ctx.lineWidth = lineWidth;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.stroke();
-
-            const drawData = { fromX: lastX, fromY: lastY, toX: x, toY: y, color: ctx.strokeStyle, lineWidth: ctx.lineWidth, tool: currentTool };
-            whiteboardHistory.push(drawData); // Add to local history
-
-            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                chatSocket.send(JSON.stringify({ type: 'whiteboard_data', data: drawData, sender_id: currentUserId }));
-            }
-            [lastX, lastY] = [x, y];
-        }
-
-        function stopDraw(event) {
-            event.preventDefault();
-            if (!isDrawing) return;
-            isDrawing = false;
-            // ctx.beginPath(); // To prevent connecting the next draw start
-        }
-
-        pencilToolBtn.addEventListener('click', () => currentTool = 'pencil');
-        eraserToolBtn.addEventListener('click', () => currentTool = 'eraser');
-        colorPicker.addEventListener('change', (e) => strokeColor = e.target.value);
-        brushSizeSlider.addEventListener('input', (e) => lineWidth = e.target.value);
-
-        clearBtn.addEventListener('click', () => {
-            if (confirm('Clear whiteboard for everyone?')) {
-                ctx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
-                whiteboardHistory = [];
-                if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                    chatSocket.send(JSON.stringify({ type: 'whiteboard_clear', sender_id: currentUserId }));
-                }
-            }
-        });
-        saveBtn.addEventListener('click', () => {
-            const dataUrl = whiteboardCanvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = `whiteboard_${reservationId}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-
-
-        whiteboardCanvas.addEventListener('mousedown', startDraw);
-        whiteboardCanvas.addEventListener('mousemove', draw);
-        whiteboardCanvas.addEventListener('mouseup', stopDraw);
-        whiteboardCanvas.addEventListener('mouseout', stopDraw); // Stop if mouse leaves canvas
-
-        whiteboardCanvas.addEventListener('touchstart', startDraw, { passive: false });
-        whiteboardCanvas.addEventListener('touchmove', draw, { passive: false });
-        whiteboardCanvas.addEventListener('touchend', stopDraw, { passive: false });
-
-
-        window.resizeWhiteboardCanvas = () => {
-            const parent = whiteboardView; // The flex container
-            if (parent.offsetWidth > 0 && parent.offsetHeight > 0) {
-                 // Save current content
-                // const currentData = ctx.getImageData(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
-                whiteboardCanvas.width = parent.clientWidth - 2; // Account for any borders/padding
-                whiteboardCanvas.height = parent.clientHeight - 2;
-                 // Restore content (or better, redraw from history)
-                // ctx.putImageData(currentData, 0, 0);
-                redrawWhiteboardHistory();
-            }
-        };
-        window.redrawWhiteboardHistory = () => {
-            ctx.clearRect(0,0, whiteboardCanvas.width, whiteboardCanvas.height); // Clear first
-            whiteboardHistory.forEach(data => {
-                ctx.beginPath();
-                ctx.moveTo(data.fromX, data.fromY);
-                ctx.lineTo(data.toX, data.toY);
-                ctx.strokeStyle = data.color;
-                ctx.lineWidth = data.lineWidth;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.stroke();
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: {width: {ideal: 640}, height: {ideal: 360}},
+                audio: {echoCancellation: true, noiseSuppression: true}
             });
-        };
+            localVideoEl.srcObject = localStream;
+            globalMeetingContext.localStream = localStream;
 
-        // Functions to handle drawing events from WebSocket
-        window.handleWhiteboardDrawEvent = (data) => {
-            if (data.sender_id === currentUserId) return; // Don't redraw own actions
-            ctx.beginPath();
-            ctx.moveTo(data.fromX, data.fromY);
-            ctx.lineTo(data.toX, data.toY);
-            ctx.strokeStyle = data.color;
-            ctx.lineWidth = data.lineWidth;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.stroke();
-            whiteboardHistory.push(data); // Add to history
-        };
-        window.handleWhiteboardClearEvent = () => {
-            ctx.clearRect(0, 0, whiteboardCanvas.width, whiteboardCanvas.height);
-            whiteboardHistory = [];
-        };
-        window.applyWhiteboardHistory = (historyData) => {
-            whiteboardHistory = historyData || [];
-            redrawWhiteboardHistory();
-        };
-
-        // Initial resize
-        setTimeout(resizeWhiteboardCanvas, 100); // Delay to ensure parent is rendered
-        // Also call on window resize
-        window.addEventListener('resize', resizeWhiteboardCanvas);
-    }
-
+            toggleMicBtn.classList.add('active');
+            toggleCameraBtn.classList.add('active');
+        } catch (err) {
+            console.error("Error accessing media devices:", err);
+            alert("Could not access camera or microphone. Some features will be disabled.");
+            isMicEnabled = false;
+            isCameraEnabled = false;
+            toggleMicBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+            toggleCameraBtn.innerHTML = '<i class="fas fa-video-slash"></i>';
+            toggleMicBtn.classList.remove('active');
+            toggleCameraBtn.classList.remove('active');
+        }
+    });
 </script>
 {% endblock %}

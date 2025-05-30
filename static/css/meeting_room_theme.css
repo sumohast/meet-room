@@ -1,0 +1,375 @@
+
+    body {
+        overflow: hidden; /* جلوگیری از اسکرول اضافی صفحه اصلی */
+        background-color: #2C2F33; /* رنگ پس‌زمینه اصلی اتاق جلسه */
+        color: #fff; /* رنگ متن پیش‌فرض */
+    }
+
+    .meeting-main-content {
+        position: absolute;
+        top: 0; /* اگر هدر سراسری دارید، باید ارتفاع آن را کم کنید */
+        left: 0;
+        right: 0;
+        bottom: 70px; /* ارتفاع نوار کنترل پایین + کمی فاصله */
+        display: flex;
+        flex-direction: column; /* برای چیدمان ویدئوها و سایر عناصر */
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        gap: 10px; /* فاصله بین عناصر اصلی محتوا */
+    }
+
+    #videocall-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column; /* چیدمان remoteVideos و localVideo */
+        justify-content: center;
+        align-items: center;
+        position: relative; /* برای موقعیت‌دهی localVideo */
+    }
+
+    #remoteVideos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: 100%;
+        height: calc(100% - 170px); /* ارتفاع را برای localVideo و کنترل‌ها در نظر بگیرید */
+        justify-content: center;
+        align-items: center;
+        overflow-y: auto; /* اگر تعداد ویدئوها زیاد شد */
+    }
+
+    .remote-video-container {
+        width: calc(50% - 10px); /* مثال: دو ویدئو در هر ردیف */
+        min-width: 280px; /* حداقل عرض برای هر ویدئو */
+        height: auto;
+        aspect-ratio: 16 / 9; /* حفظ نسبت تصویر */
+        max-height: calc(50vh - 50px); /* محدودیت ارتفاع */
+        background-color: #202225; /* رنگ پس‌زمینه برای ویدئوها */
+        border-radius: 8px;
+        overflow: hidden; /* برای اینکه ویدئو از کانتینر بیرون نزند */
+        position: relative; /* برای لیبل نام */
+        border: 1px solid #18191c;
+    }
+
+    .remote-video-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* یا contain، بسته به نیاز */
+        display: block;
+    }
+     .video-label-remote {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        padding: 3px 8px;
+        font-size: 0.8rem;
+        border-radius: 4px;
+        z-index: 1;
+    }
+
+
+    .local-video-wrapper { /* برای کنترل بهتر موقعیت ویدئوی محلی */
+        position: absolute;
+        bottom: 10px; /* فاصله از نوار کنترل */
+        right: 10px;
+        width: 200px;
+        height: 150px; /* ارتفاع ثابت */
+        border: 2px solid #7289DA; /* رنگ آبی دیسکورد */
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        z-index: 100; /* بالاتر از ویدئوهای دیگر */
+    }
+
+    #localVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1); /* حالت آینه */
+    }
+    .video-label-local {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        background: rgba(0,0,0,0.6);
+        color: #fff;
+        padding: 2px 5px;
+        font-size: 0.75rem;
+        border-radius: 3px;
+    }
+
+
+    #screenShareVideoContainer, #whiteboardViewContainer {
+        width: 100%;
+        height: 100%;
+        display: none; /* در ابتدا مخفی */
+        justify-content: center;
+        align-items: center;
+        background-color: #202225; /* پس‌زمینه مشابه ویدئو */
+        border-radius: 8px;
+    }
+    #screenShareVideo, #whiteboard {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 8px;
+        display: block;
+    }
+    #whiteboard {
+        background-color: #282b30; /* یک رنگ تیره‌تر برای وایت‌برد */
+        cursor: crosshair;
+    }
+
+
+    .meeting-control-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background-color: #202225; /* رنگ تیره‌تر برای نوار */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0 20px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.4);
+        z-index: 1000;
+        gap: 5px; /* فاصله کم بین دکمه‌ها */
+    }
+    .control-bar-button {
+        background-color: #2f3136; /* پس‌زمینه دکمه‌ها */
+        border: none;
+        color: #b9bbbe; /* رنگ آیکن‌ها */
+        font-size: 1.2rem; /* اندازه آیکن‌ها */
+        width: 44px; /* اندازه دکمه */
+        height: 44px;
+        border-radius: 50%; /* دکمه‌های گرد */
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .control-bar-button:hover {
+        background-color: #36393f;
+        color: #fff;
+    }
+    .control-bar-button.active {
+        background-color: #7289DA; /* رنگ آبی دیسکورد برای دکمه فعال */
+        color: #fff;
+    }
+    .control-bar-button.active:hover {
+        background-color: #5b6eae;
+    }
+    .control-bar-button.danger {
+        background-color: #f04747; /* رنگ قرمز برای خروج */
+        color: #fff;
+    }
+    .control-bar-button.danger:hover {
+        background-color: #d84040;
+    }
+
+    /* پنل‌های چت و شرکت‌کنندگان (استایل اولیه) */
+    .side-panel {
+        position: fixed;
+        top: 0; /* اگر هدر دارید، ارتفاع هدر */
+        right: -360px; /* شروع از خارج صفحه - عرض بیشتر */
+        width: 350px;
+        bottom: 70px; /* ارتفاع نوار کنترل پایین + کمی فاصله */
+        background-color: #2f3136; /* رنگ مشابه دکمه‌ها یا کمی تیره‌تر از پس‌زمینه اصلی */
+        box-shadow: -3px 0 15px rgba(0,0,0,0.3);
+        transition: right 0.3s ease-in-out;
+        z-index: 999;
+        overflow: hidden; /* برای اینکه محتوای داخلی از پنل بیرون نزند */
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid #202225;
+    }
+    .side-panel.open {
+        right: 0;
+    }
+    .side-panel-header {
+        padding: 10px 15px;
+        background-color: #202225; /* هدر تیره‌تر برای پنل‌ها */
+        color: #fff;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    .side-panel-header .close-panel-btn {
+        background: none;
+        border: none;
+        color: #b9bbbe;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+    .side-panel-header .close-panel-btn:hover {
+        color: #fff;
+    }
+    .side-panel-content {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 15px;
+    }
+
+    /* استایل‌های چت و شرکت‌کنندگان در داخل پنل */
+    .chat-container, .participants-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    /* Chat Styles */
+    #chat-log { /* قبلا .chat-messages بود */
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 5px; /* برای اسکرول بار */
+    }
+    .message {
+        margin-bottom: 12px;
+        max-width: 90%;
+        position: relative;
+        padding: 8px 12px;
+        border-radius: 18px; /* گردی بیشتر */
+        font-size: 0.88rem;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+    .message-mine {
+        margin-left: auto;
+        background-color: #7289DA;
+        color: #fff;
+        border-radius: 18px 18px 0 18px;
+    }
+    .message-others {
+        margin-right: auto;
+        background-color: #3a3e43;
+        color: #dcddde;
+        border-radius: 18px 18px 18px 0;
+    }
+    .message-sender {
+        font-weight: 600;
+        font-size: 0.75rem;
+        margin-bottom: 3px;
+        color: #b9bbbe;
+    }
+    .message-time {
+        font-size: 0.7rem;
+        color: #72767d;
+        text-align: right; /* برای پیام‌های خودمان */
+        margin-top: 4px;
+    }
+    .message-others .message-time {
+        text-align: left;
+    }
+
+    #chat-form .input-group {
+        border-top: 1px solid #202225;
+        padding-top: 10px;
+    }
+    #chat-message-input {
+        background-color: #40444b;
+        border: 1px solid #202225;
+        color: #dcddde;
+        border-radius: 20px 0 0 20px !important; /* گردی برای ورودی */
+        padding-left: 15px;
+        font-size: 0.9rem;
+    }
+    #chat-message-input::placeholder {
+        color: #72767d;
+    }
+    #chat-message-input:focus {
+        border-color: #7289DA;
+        box-shadow: none;
+    }
+    #chat-message-submit {
+        background-color: #40444b;
+        border: 1px solid #202225;
+        border-left: none;
+        color: #7289DA;
+        border-radius: 0 20px 20px 0 !important; /* گردی برای دکمه */
+    }
+     #chat-message-submit:hover {
+        color: #fff;
+        background-color: #7289DA;
+    }
+
+
+    /* Participants Styles */
+    #user-list { /* قبلا .participants-list بود */
+       /* flex-grow: 1;
+        overflow-y: auto; */
+    }
+    .participant {
+        display: flex;
+        align-items: center;
+        padding: 8px 0; /* پدینگ عمودی */
+        border-bottom: 1px solid #3a3e43;
+    }
+     .participant:last-child {
+        border-bottom: none;
+    }
+    .participant-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #7289DA;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 10px;
+        font-size: 0.9rem;
+    }
+    .participant-name {
+        font-size: 0.9rem;
+        color: #dcddde;
+    }
+
+
+    /* Whiteboard Toolbar */
+    #whiteboardToolbarContainer {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(47, 49, 54, 0.9); /* #2f3136 with transparency */
+        padding: 8px 12px;
+        border-radius: 25px; /* کاملا گرد */
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        z-index: 100;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    #whiteboardToolbarContainer .btn,
+    #whiteboardToolbarContainer input[type="color"],
+    #whiteboardToolbarContainer input[type="range"] {
+        background-color: #40444b;
+        color: #b9bbbe;
+        border: 1px solid #202225;
+        height: 32px; /* ارتفاع یکسان برای همه عناصر */
+        padding: 0 10px; /* پدینگ افقی برای دکمه‌ها */
+        border-radius: 16px; /* گرد کردن دکمه‌ها */
+    }
+    #whiteboardToolbarContainer .btn i {
+        vertical-align: middle;
+    }
+    #whiteboardToolbarContainer input[type="color"] {
+        width: 32px; /* مربع کوچک برای رنگ */
+        padding: 2px; /* پدینگ داخلی برای رنگ */
+    }
+     #whiteboardToolbarContainer input[type="range"] {
+        width: 80px; /* عرض برای اسلایدر */
+        padding: 0;
+    }
+    #whiteboardToolbarContainer .btn:hover {
+        background-color: #7289DA;
+        color: #fff;
+    }
+

@@ -1,7 +1,53 @@
-Django==4.2.11
-python-dateutil==2.8.2
-django-crispy-forms==2.0
-pillow==10.0.0
-django-humanize==0.1.2
-channels-redis~=4.2.0
+# Django Framework
+django==4.2.11
+
+# WebSocket Support
+channels
+channels-redis
+
+# Task Queue
+celery
+redis
+
+# Image Processing
 pillow==9.5.0
+
+# Forms Styling
+django-crispy-forms==2.0
+crispy-bootstrap4
+
+# Date Utilities
+python-dateutil==2.8.2
+
+# ASGI Server for Production
+daphne
+
+# Database
+psycopg2-binary  # for PostgreSQL (comment out if using SQLite)
+
+# Development Tools (optional - remove in production)
+django-debug-toolbar
+
+# Email Backend (if using external email service)
+# sendgrid  # if using SendGrid
+# django-ses  # if using Amazon SES
+
+# Environment Variables
+python-decouple
+
+# Timezone Support
+pytz
+
+# JSON Web Tokens (if needed for API)
+# djangorestframework
+# djangorestframework-simplejwt
+
+# Cors Headers (if building API)
+# django-cors-headers
+
+# Testing
+pytest-django
+factory-boy
+
+# Logging
+colorlog
